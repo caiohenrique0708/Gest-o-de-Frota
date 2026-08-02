@@ -1,0 +1,2598 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Gestão de Manutenção de Frota</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: "Times New Roman", Times, serif;
+    background: #f2f2f2;
+    color: #111;
+  }
+
+  /* ===== HEADER ===== */
+  header {
+    background: #000;
+    color: #fff;
+    padding: 0 24px;
+    position: sticky;
+    top: 0;
+    z-index: 50;
+  }
+  .header-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 0;
+    border-bottom: 1px solid #333;
+  }
+  .header-left {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+  }
+  .header-left img {
+    height: 84px;
+    width: auto;
+    background: #000;
+    padding: 6px 12px;
+    border-radius: 6px;
+  }
+  .header-left .divider {
+    width: 1px;
+    height: 40px;
+    background: #444;
+  }
+  .header-top h1 {
+    font-size: 18px;
+    font-weight: 700;
+    letter-spacing: 0.3px;
+  }
+  .header-right {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+  }
+  .header-user { font-size: 13px; color: #ccc; }
+  .header-icon-btn {
+    background: transparent;
+    border: 1px solid #444;
+    color: #fff;
+    padding: 6px 12px;
+    border-radius: 6px;
+    font-size: 12.5px;
+    cursor: pointer;
+    font-family: inherit;
+  }
+  .header-icon-btn:hover { background: #222; }
+
+  .sync-status { font-size: 12px; color: #aaa; display: flex; align-items: center; gap: 6px; }
+  .sync-dot { width: 7px; height: 7px; border-radius: 50%; background: #4ade80; display: inline-block; }
+  .sync-dot.saving { background: #facc15; }
+  .sync-dot.error { background: #f87171; }
+
+  nav { display: flex; gap: 4px; overflow-x: auto; }
+  nav button {
+    background: transparent; border: none; color: #999;
+    padding: 12px 16px; font-size: 14px; font-weight: 600;
+    cursor: pointer; border-bottom: 3px solid transparent; white-space: nowrap;
+  }
+  nav button:hover { color: #fff; }
+  nav button.active { color: #fff; border-bottom-color: #fff; }
+
+  main { width: 100%; margin: 0; padding: 28px 40px; }
+
+  .tab-panel { display: none; }
+  .tab-panel.active { display: block; }
+  .app-hidden { display: none !important; }
+
+  .panel-header {
+    display: flex; justify-content: space-between; align-items: center;
+    margin-bottom: 16px; flex-wrap: wrap; gap: 12px;
+  }
+  .panel-header h2 { font-size: 20px; font-weight: 700; }
+  .panel-sub { font-size: 13px; color: #666; margin-top: 2px; }
+
+  .btn {
+    background: #000; color: #fff; border: none; padding: 10px 18px;
+    border-radius: 6px; font-size: 14px; font-weight: 600; cursor: pointer;
+  }
+  .btn:hover { background: #222; }
+  .btn.secondary { background: #fff; color: #000; border: 1px solid #ccc; }
+  .btn.secondary:hover { background: #f5f5f5; }
+  .btn.danger { background: #fff; color: #d33; border: 1px solid #d33; }
+  .btn.danger:hover { background: #fff0f0; }
+  .btn.small { padding: 6px 10px; font-size: 12px; }
+
+  .search-box { position: relative; max-width: 340px; width: 100%; }
+  .search-box input {
+    width: 100%; padding: 10px 14px 10px 36px; border: 1px solid #ccc;
+    border-radius: 8px; font-size: 13.5px; font-family: inherit;
+  }
+  .search-box input:focus { outline: 2px solid #000; border-color: #000; }
+  .search-box::before {
+    content: "🔍"; position: absolute; left: 12px; top: 50%;
+    transform: translateY(-50%); font-size: 12px; opacity: 0.6;
+  }
+
+  /* ===== TABLE ===== */
+  .table-wrap {
+    background: #fff; border-radius: 10px; overflow: hidden;
+    border: 1px solid #e0e0e0; overflow-x: auto;
+  }
+  table { width: 100%; border-collapse: collapse; font-size: 13.5px; min-width: 900px; }
+  thead th {
+    background: #000; color: #fff; text-align: left; padding: 12px 14px;
+    font-weight: 600; white-space: nowrap;
+  }
+  tbody td { padding: 10px 14px; border-bottom: 1px solid #eee; color: #111; }
+  tbody tr:hover { background: #fafafa; }
+  tbody tr.total-row { background: #f0f0f0; font-weight: 700; }
+  tbody tr.total-row td { border-top: 2px solid #000; }
+
+  input.cell-input {
+    width: 120px; padding: 6px 8px; border: 1px solid #ccc; border-radius: 5px; font-size: 13.5px;
+  }
+  input.cell-input:focus { outline: 2px solid #000; border-color: #000; }
+
+  .badge { display: inline-block; padding: 4px 10px; border-radius: 20px; font-size: 12px; font-weight: 700; }
+  .badge-ok { background: #dcfce7; color: #15803d; }
+  .badge-atencao { background: #fef9c3; color: #a16207; }
+  .badge-estourado { background: #fee2e2; color: #b91c1c; }
+  .badge-sem { background: #f0f0f0; color: #666; }
+  .badge-ativo { background: #dcfce7; color: #15803d; }
+  .badge-inativo { background: #fee2e2; color: #b91c1c; }
+  .badge-manutencao { background: #fef9c3; color: #a16207; }
+  .badge-info { background: #dbeafe; color: #1d4ed8; }
+  .badge-purple { background: #ede9fe; color: #6d28d9; }
+  .badge-pendente { background: #f0f0f0; color: #555; }
+  .badge-cancelado { background: #fee2e2; color: #b91c1c; }
+
+  /* ===== MODAL ===== */
+  .modal-overlay {
+    display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5);
+    align-items: center; justify-content: center; z-index: 100; padding: 20px;
+  }
+  .modal-overlay.active { display: flex; }
+  .modal { background: #fff; border-radius: 12px; width: 100%; max-width: 480px; max-height: 90vh; overflow-y: auto; }
+  .modal-header {
+    background: #000; color: #fff; padding: 16px 20px;
+    display: flex; justify-content: space-between; align-items: center; border-radius: 12px 12px 0 0;
+  }
+  .modal-header h3 { font-size: 16px; }
+  .modal-close { background: none; border: none; color: #fff; font-size: 20px; cursor: pointer; }
+  .modal-body { padding: 20px; display: flex; flex-direction: column; gap: 14px; }
+  .field label { display: block; font-size: 12.5px; font-weight: 600; margin-bottom: 5px; color: #333; }
+  .field input, .field select {
+    width: 100%; padding: 9px 10px; border: 1px solid #ccc; border-radius: 6px; font-size: 14px; font-family: inherit;
+  }
+  .field input:focus, .field select:focus { outline: 2px solid #000; border-color: #000; }
+  .modal-footer { display: flex; justify-content: flex-end; gap: 10px; padding: 16px 20px; border-top: 1px solid #eee; }
+
+  .empty-state { text-align: center; padding: 60px 20px; color: #888; }
+  .placeholder-box {
+    background: #fff; border: 1px dashed #ccc; border-radius: 10px; padding: 60px 20px; text-align: center; color: #888;
+  }
+
+  .toast {
+    position: fixed; bottom: 24px; right: 24px; background: #000; color: #fff;
+    padding: 12px 18px; border-radius: 8px; font-size: 13px; z-index: 200;
+    opacity: 0; transform: translateY(10px); transition: all 0.25s; pointer-events: none;
+  }
+  .toast.show { opacity: 1; transform: translateY(0); }
+
+  /* ===== LOGIN SCREEN ===== */
+  #loginScreen {
+    position: fixed; inset: 0; background: #000; display: flex;
+    align-items: center; justify-content: center; z-index: 500; padding: 20px;
+  }
+  #loginScreen.hidden { display: none; }
+  .login-card { background: #111; border: 1px solid #333; border-radius: 14px; padding: 36px 32px; width: 100%; max-width: 380px; text-align: center; }
+  .login-card img { height: 70px; margin-bottom: 18px; }
+  .login-card h2 { color: #fff; font-size: 18px; margin-bottom: 6px; }
+  .login-card p { color: #999; font-size: 13px; margin-bottom: 22px; }
+  .login-field { text-align: left; margin-bottom: 14px; }
+  .login-field label { display: block; color: #ccc; font-size: 12.5px; font-weight: 600; margin-bottom: 5px; }
+  .login-field input {
+    width: 100%; padding: 10px 12px; border-radius: 6px; border: 1px solid #444;
+    background: #1a1a1a; color: #fff; font-size: 14px; font-family: inherit;
+  }
+  .login-field input:focus { outline: 2px solid #e5342a; border-color: #e5342a; }
+  .login-remember { display: flex; align-items: center; gap: 8px; margin-bottom: 16px; text-align: left; }
+  .login-remember input { width: auto; }
+  .login-remember label { color: #ccc; font-size: 12.5px; margin: 0; }
+  .login-btn {
+    width: 100%; background: #e5342a; color: #fff; border: none; padding: 12px;
+    border-radius: 6px; font-size: 14px; font-weight: 700; cursor: pointer; margin-top: 6px; font-family: inherit;
+  }
+  .login-btn:hover { background: #c72a21; }
+  .login-error { color: #f87171; font-size: 12.5px; margin-top: 10px; min-height: 16px; }
+  .login-hint { color: #666; font-size: 11.5px; margin-top: 16px; }
+
+  /* ===== CHECKLIST EMBUTIDO NA ABA ===== */
+  #checklistFormOverlay {
+    background: #fff; border: 1px solid #e0e0e0; border-radius: 12px; overflow: hidden; margin-top: 24px;
+  }
+  .checklist-form-header {
+    background: #000; color: #fff; padding: 14px 24px;
+    display: flex; justify-content: space-between; align-items: center;
+  }
+  .checklist-form-header h2 { font-size: 16px; }
+  .checklist-form-body { padding: 24px; }
+  .checklist-meta-grid {
+    display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px;
+    background: #fafafa; border: 1px solid #e0e0e0; border-radius: 10px; padding: 20px; margin-bottom: 22px;
+  }
+  .checklist-meta-grid .field label { font-size: 11.5px; }
+  .checklist-category {
+    background: #e08030; color: #fff; padding: 10px 16px; font-weight: 700; font-size: 14px;
+    margin-top: 22px; margin-bottom: 0; border-radius: 8px 8px 0 0;
+  }
+  .checklist-items-table { width: 100%; border-collapse: collapse; background: #fff; border: 1px solid #e0e0e0; border-top: none; margin-bottom: 4px; }
+  .checklist-items-table td { padding: 8px 12px; border-bottom: 1px solid #eee; font-size: 13.5px; vertical-align: middle; }
+  .checklist-item-num { width: 34px; color: #888; }
+  .checklist-item-name { width: 34%; }
+  .checklist-status-cell { text-align: center; width: 70px; }
+  .checklist-status-cell input[type="radio"] { transform: scale(1.2); cursor: pointer; }
+  .checklist-obs-cell input {
+    width: 100%; padding: 6px 8px; border: 1px solid #ccc; border-radius: 5px; font-size: 12.5px; font-family: inherit;
+  }
+  .checklist-signature-grid {
+    display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px;
+    background: #fafafa; border: 1px solid #e0e0e0; border-radius: 10px; padding: 20px; margin-top: 22px;
+  }
+  .checklist-form-footer {
+    background: #fff; border-top: 1px solid #ddd;
+    padding: 14px 24px; display: flex; justify-content: flex-end; gap: 10px;
+  }
+
+  /* ===== PRINT ===== */
+  /* ===== DASHBOARD ===== */
+  #tab-dashboard {
+    background: linear-gradient(160deg, #0d1128 0%, #171236 55%, #1c1440 100%);
+    margin: -28px -40px;
+    padding: 28px 40px;
+    min-height: calc(100vh - 84px);
+  }
+  #tab-dashboard .panel-header h2 { color: #fff; }
+  #tab-dashboard .panel-sub { color: #9ea3c9; }
+
+  .dash-filter-bar {
+    display: flex; align-items: flex-end; gap: 14px; flex-wrap: wrap;
+    background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 12px; padding: 16px 18px; margin-bottom: 20px;
+  }
+  .dash-filter-bar .field label { color: #b6bae0; font-size: 11.5px; text-transform: uppercase; letter-spacing: 0.5px; }
+  .dash-filter-bar .field input, .dash-filter-bar .field select {
+    background: #12163a; border: 1px solid #33397a; color: #fff; min-width: 160px;
+  }
+  .dash-filter-btn {
+    background: linear-gradient(135deg, #6366f1, #a855f7); border: none; color: #fff;
+    padding: 10px 18px; border-radius: 8px; font-weight: 700; cursor: pointer; font-family: inherit; font-size: 13.5px;
+  }
+  .dash-filter-btn:hover { opacity: 0.9; }
+
+  .kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 14px; margin-bottom: 20px; }
+  .kpi-card {
+    background: linear-gradient(155deg, rgba(99,102,241,0.18), rgba(168,85,247,0.10));
+    border: 1px solid rgba(255,255,255,0.10); border-radius: 14px; padding: 18px 20px;
+    box-shadow: 0 8px 24px rgba(76, 29, 149, 0.25);
+  }
+  .kpi-label { color: #b6bae0; font-size: 11px; text-transform: uppercase; letter-spacing: 0.6px; margin-bottom: 8px; }
+  .kpi-value { color: #fff; font-size: 22px; font-weight: 700; }
+
+  .dash-grid { display: grid; grid-template-columns: 1.3fr 1fr; gap: 16px; margin-bottom: 16px; }
+  .dash-grid.two-col { grid-template-columns: 1fr 1fr; }
+  .dash-grid.three-col { grid-template-columns: 1fr 1fr 1fr; }
+  @media (max-width: 900px) {
+    .dash-grid, .dash-grid.two-col, .dash-grid.three-col { grid-template-columns: 1fr; }
+  }
+
+  .dash-card { background: rgba(255,255,255,0.045); border: 1px solid rgba(255,255,255,0.09); border-radius: 14px; padding: 18px 20px; }
+  .dash-card h3 { color: #fff; font-size: 14.5px; margin-bottom: 14px; font-weight: 700; }
+  .dash-card-canvas-wrap { position: relative; height: 240px; }
+
+  .dash-list-item { display: flex; justify-content: space-between; align-items: center; padding: 9px 0; border-bottom: 1px solid rgba(255,255,255,0.08); font-size: 13px; }
+  .dash-list-item:last-child { border-bottom: none; }
+  .dash-list-name { color: #e4e6fb; }
+  .dash-list-meta { color: #9ea3c9; font-size: 11.5px; }
+  .dash-list-value { color: #4ade80; font-weight: 700; text-align: right; }
+  .dash-list-value.warn { color: #facc15; }
+  .dash-list-value.danger { color: #f87171; }
+  .dash-empty { color: #7d81ab; font-size: 12.5px; text-align: center; padding: 24px 0; }
+
+  .dash-table-wrap { background: rgba(255,255,255,0.045); border: 1px solid rgba(255,255,255,0.09); border-radius: 14px; overflow: hidden; overflow-x: auto; }
+  .dash-table-wrap table { width: 100%; border-collapse: collapse; font-size: 12.5px; min-width: 800px; }
+  .dash-table-wrap thead th { background: rgba(99,102,241,0.25); color: #fff; text-align: left; padding: 10px 12px; font-weight: 600; white-space: nowrap; }
+  .dash-table-wrap tbody td { padding: 8px 12px; border-bottom: 1px solid rgba(255,255,255,0.06); color: #e4e6fb; }
+  .dash-table-wrap tbody tr:hover { background: rgba(255,255,255,0.03); }
+
+  #printArea { display: none; }
+  @media print {
+    body * { visibility: hidden; }
+    #printArea, #printArea * { visibility: visible; }
+    #printArea { display: block; position: absolute; top: 0; left: 0; width: 100%; padding: 20px; }
+    .print-header { text-align: center; font-weight: 700; font-size: 16px; margin-bottom: 4px; }
+    .print-sub { text-align: center; font-size: 12px; color: #444; margin-bottom: 14px; }
+    .print-meta { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px 16px; font-size: 12px; margin-bottom: 14px; border: 1px solid #999; padding: 10px; }
+    .print-category { background: #e08030; color: #fff; font-weight: 700; padding: 5px 8px; font-size: 12.5px; margin-top: 10px; }
+    .print-items-table { width: 100%; border-collapse: collapse; font-size: 11.5px; }
+    .print-items-table td, .print-items-table th { border: 1px solid #999; padding: 4px 6px; }
+    .print-signature { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; margin-top: 24px; font-size: 12px; }
+    .print-signature div { border-top: 1px solid #333; padding-top: 6px; text-align: center; }
+  }
+</style>
+</head>
+<body>
+
+<div id="loginScreen">
+  <div class="login-card">
+    <img id="loginLogo" src="" alt="Logo">
+    <h2 id="loginTitle">Entrar no sistema</h2>
+    <p id="loginSubtitle">Acesso restrito à equipe de frota</p>
+
+    <div class="login-field" id="loginNomeField" style="display:none;">
+      <label>Seu nome</label>
+      <input type="text" id="loginNome" placeholder="Ex: João Silva">
+    </div>
+    <div class="login-field">
+      <label>Usuário</label>
+      <input type="text" id="loginUsuario" placeholder="usuario">
+    </div>
+    <div class="login-field">
+      <label>Senha</label>
+      <input type="password" id="loginSenha" placeholder="••••••••">
+    </div>
+    <div class="login-remember">
+      <input type="checkbox" id="loginRemember">
+      <label for="loginRemember">Manter-me conectado neste computador</label>
+    </div>
+    <button class="login-btn" id="btnDoLogin">Entrar</button>
+    <div class="login-error" id="loginError"></div>
+    <div class="login-hint" id="loginHint"></div>
+  </div>
+</div>
+
+<header id="appHeader" class="app-hidden">
+  <div class="header-top">
+    <div class="header-left">
+      <img src="data:image/png;base64,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" alt="Logo da empresa">
+      <div class="divider"></div>
+      <h1>Gestão de Manutenção de Frota</h1>
+    </div>
+    <div class="header-right">
+      <span class="header-user" id="headerUserLabel"></span>
+      <button class="header-icon-btn" id="btnManageUsers">Usuários</button>
+      <button class="header-icon-btn" id="btnLogout">Sair</button>
+      <div class="sync-status"><span class="sync-dot" id="syncDot"></span><span id="syncText">Sincronizado</span></div>
+    </div>
+  </div>
+  <nav id="tabNav">
+    <button data-tab="frota" class="active">Cadastro de Frota</button>
+    <button data-tab="manutencoes">Manutenções</button>
+    <button data-tab="checklist">Checklist de Inspeção</button>
+    <button data-tab="preventivo">Plano Preventivo</button>
+    <button data-tab="dashboard">Painel Executivo</button>
+  </nav>
+</header>
+
+<main id="appMain" class="app-hidden">
+
+  <!-- CADASTRO DE FROTA -->
+  <section class="tab-panel active" id="tab-frota">
+    <div class="panel-header">
+      <div>
+        <h2>Cadastro de Frota</h2>
+        <div class="panel-sub">Todos os veículos da frota, com KM, revisões e status.</div>
+      </div>
+      <div style="display:flex; gap:10px;">
+        <button class="btn secondary" id="btnImportFleet">📥 Importar Frota da Planilha</button>
+        <button class="btn" id="btnNewVehicle">+ Novo Veículo</button>
+      </div>
+    </div>
+    <div class="search-box" style="margin-bottom:14px;">
+      <input type="text" id="vehicleSearchInput" placeholder="Buscar por ID, placa, modelo ou marca...">
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Placa</th>
+            <th>Modelo</th>
+            <th>Marca</th>
+            <th>Ano</th>
+            <th>Cor</th>
+            <th>Capac. (t)</th>
+            <th>Carroceria</th>
+            <th>KM Atual</th>
+            <th>KM Últ. Revisão</th>
+            <th>Próx. Revisão (KM)</th>
+            <th>Dt. Licenciamento</th>
+            <th>Status</th>
+            <th>Responsável</th>
+            <th>Documento</th>
+            <th>Ações</th>
+          </tr>
+        </thead>
+        <tbody id="vehiclesTableBody"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- MANUTENÇÕES -->
+  <section class="tab-panel" id="tab-manutencoes">
+    <div class="panel-header">
+      <div>
+        <h2>Manutenções</h2>
+        <div class="panel-sub">Histórico completo de ordens de serviço, com custo calculado automaticamente.</div>
+      </div>
+      <button class="btn" id="btnNewMaintenance">+ Nova Manutenção</button>
+    </div>
+    <div class="search-box" style="margin-bottom:14px;">
+      <input type="text" id="maintenanceSearchInput" placeholder="Buscar por OS, veículo, placa, serviço ou oficina...">
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Nº OS</th>
+            <th>Veículo</th>
+            <th>Placa</th>
+            <th>Tipo</th>
+            <th>Categoria</th>
+            <th>Descrição</th>
+            <th>Dt. Abertura</th>
+            <th>Dt. Conclusão</th>
+            <th>Dias</th>
+            <th>KM Revisão</th>
+            <th>Mecânico/Oficina</th>
+            <th>Peças (R$)</th>
+            <th>Mão de Obra (R$)</th>
+            <th>Custo Total (R$)</th>
+            <th>Status</th>
+            <th>Ações</th>
+          </tr>
+        </thead>
+        <tbody id="maintenancesTableBody"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- CHECKLIST DE INSPEÇÃO -->
+  <section class="tab-panel" id="tab-checklist">
+    <div class="panel-header">
+      <div>
+        <h2>Checklist de Inspeção</h2>
+        <div class="panel-sub">Inspeção diária do veículo, com itens totalmente editáveis e opção de impressão.</div>
+      </div>
+      <div style="display:flex; gap:10px;">
+        <button class="btn secondary" id="btnManageChecklistItems">Editar Itens do Checklist</button>
+        <button class="btn" id="btnNewChecklist">+ Novo Checklist</button>
+      </div>
+    </div>
+    <div class="search-box" style="margin-bottom:14px;">
+      <input type="text" id="checklistSearchInput" placeholder="Buscar por veículo, placa ou motorista...">
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Data</th>
+            <th>Veículo</th>
+            <th>Placa</th>
+            <th>Motorista</th>
+            <th>KM</th>
+            <th>Itens c/ Defeito</th>
+            <th>Situação</th>
+            <th>Ações</th>
+          </tr>
+        </thead>
+        <tbody id="checklistsTableBody"></tbody>
+      </table>
+    </div>
+
+    <!-- FORMULÁRIO DO CHECKLIST — SEMPRE VISÍVEL NA ABA -->
+    <div id="checklistFormOverlay">
+      <div class="checklist-form-header">
+        <h2 id="checklistFormTitle">Novo Checklist de Inspeção</h2>
+        <button class="header-icon-btn" id="closeChecklistForm">+ Começar novo</button>
+      </div>
+      <div class="checklist-form-body">
+        <input type="hidden" id="checklistId">
+
+        <div class="checklist-meta-grid">
+          <div class="field">
+            <label>Veículo</label>
+            <select id="checklistVeiculo"></select>
+          </div>
+          <div class="field">
+            <label>Placa</label>
+            <input type="text" id="checklistPlaca" disabled>
+          </div>
+          <div class="field">
+            <label>Data</label>
+            <input type="date" id="checklistData">
+          </div>
+          <div class="field">
+            <label>KM</label>
+            <input type="number" id="checklistKm" min="0" step="1" placeholder="0">
+          </div>
+          <div class="field">
+            <label>Motorista</label>
+            <input type="text" id="checklistMotorista" placeholder="Nome do motorista">
+          </div>
+          <div class="field">
+            <label>Turno</label>
+            <input type="text" id="checklistTurno" placeholder="Ex: Manhã">
+          </div>
+          <div class="field">
+            <label>Hora Saída</label>
+            <input type="time" id="checklistHoraSaida">
+          </div>
+          <div class="field">
+            <label>Hora Retorno</label>
+            <input type="time" id="checklistHoraRetorno">
+          </div>
+        </div>
+
+        <div id="checklistItemsContainer"></div>
+
+        <div class="checklist-signature-grid">
+          <div class="field">
+            <label>Assinatura do Motorista</label>
+            <input type="text" id="checklistAssinaturaMotorista" placeholder="Nome / confirmação">
+          </div>
+          <div class="field">
+            <label>Assinatura do Supervisor</label>
+            <input type="text" id="checklistAssinaturaSupervisor" placeholder="Nome / confirmação">
+          </div>
+          <div class="field">
+            <label>Veículo</label>
+            <select id="checklistLiberado">
+              <option value="Liberado">Liberado</option>
+              <option value="Retido">Retido</option>
+            </select>
+          </div>
+        </div>
+      </div>
+      <div class="checklist-form-footer">
+        <button class="btn secondary" id="btnPrintChecklist">🖨 Imprimir</button>
+        <button class="btn" id="saveChecklistForm">Salvar</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- PLANO PREVENTIVO -->
+  <section class="tab-panel" id="tab-preventivo">
+    <div class="panel-header">
+      <div>
+        <h2>Plano Preventivo</h2>
+        <div class="panel-sub">Programação de manutenções preventivas por veículo, com custo estimado e prioridade.</div>
+      </div>
+      <button class="btn" id="btnNewPreventivePlan">+ Novo Item do Plano</button>
+    </div>
+    <div class="search-box" style="margin-bottom:14px;">
+      <input type="text" id="preventiveSearchInput" placeholder="Buscar por veículo, placa, serviço ou responsável...">
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>ID Veículo</th>
+            <th>Placa</th>
+            <th>Serviço Preventivo</th>
+            <th>Periodicidade</th>
+            <th>KM ou Meses</th>
+            <th>Última Execução</th>
+            <th>Próxima Prev.</th>
+            <th>KM Previsto</th>
+            <th>Responsável</th>
+            <th>Custo Est. (R$)</th>
+            <th>Status</th>
+            <th>Prioridade</th>
+            <th>Observações</th>
+            <th>Ações</th>
+          </tr>
+        </thead>
+        <tbody id="preventivePlansTableBody"></tbody>
+      </table>
+    </div>
+  </section>
+
+
+  <section class="tab-panel" id="tab-dashboard">
+    <div class="panel-header">
+      <div>
+        <h2>Painel Executivo</h2>
+        <div class="panel-sub">Visão geral da frota e dos custos de manutenção</div>
+      </div>
+    </div>
+
+    <div class="dash-filter-bar">
+      <div class="field">
+        <label>Veículo</label>
+        <select id="dashVeiculoFiltro"><option value="">Todos os caminhões</option></select>
+      </div>
+      <div class="field">
+        <label>De</label>
+        <input type="date" id="dashDataInicio">
+      </div>
+      <div class="field">
+        <label>Até</label>
+        <input type="date" id="dashDataFim">
+      </div>
+      <button class="dash-filter-btn" id="btnDashFiltrar">Filtrar</button>
+    </div>
+
+    <div class="kpi-grid">
+      <div class="kpi-card"><div class="kpi-label">Total de OS</div><div class="kpi-value" id="kpiTotalOS">0</div></div>
+      <div class="kpi-card"><div class="kpi-label">Custo Total</div><div class="kpi-value" id="kpiCustoTotal">R$ 0,00</div></div>
+      <div class="kpi-card"><div class="kpi-label">Preventivas (R$)</div><div class="kpi-value" id="kpiPreventivas">R$ 0,00</div></div>
+      <div class="kpi-card"><div class="kpi-label">Corretivas (R$)</div><div class="kpi-value" id="kpiCorretivas">R$ 0,00</div></div>
+      <div class="kpi-card"><div class="kpi-label">Custo Médio / OS</div><div class="kpi-value" id="kpiCustoMedio">R$ 0,00</div></div>
+      <div class="kpi-card"><div class="kpi-label">Veículos Ativos</div><div class="kpi-value" id="kpiVeiculosAtivos">0</div></div>
+      <div class="kpi-card"><div class="kpi-label">Alertas Vencidos</div><div class="kpi-value" id="kpiAlertasVencidos">0</div></div>
+    </div>
+
+    <div class="dash-grid two-col">
+      <div class="dash-card">
+        <h3>Status da Frota</h3>
+        <div class="dash-card-canvas-wrap"><canvas id="chartStatusFrota"></canvas></div>
+      </div>
+      <div class="dash-card">
+        <h3>Custo por Tipo de Manutenção</h3>
+        <div class="dash-card-canvas-wrap"><canvas id="chartTipoManutencao"></canvas></div>
+      </div>
+    </div>
+
+    <div class="dash-grid two-col">
+      <div class="dash-card">
+        <h3>Frota por Fabricante</h3>
+        <div class="dash-card-canvas-wrap"><canvas id="chartFabricante"></canvas></div>
+      </div>
+      <div class="dash-card">
+        <h3>Evolução Mensal de Custos</h3>
+        <div class="dash-card-canvas-wrap"><canvas id="chartEvolucao"></canvas></div>
+      </div>
+    </div>
+
+    <div class="dash-grid two-col">
+      <div class="dash-card">
+        <h3>⚠ Alertas Críticos (Plano Preventivo Vencido)</h3>
+        <div id="dashAlertasCriticos"></div>
+      </div>
+      <div class="dash-card">
+        <h3>📅 Próximas Manutenções (Agendadas)</h3>
+        <div id="dashProximasManutencoes"></div>
+      </div>
+    </div>
+
+    <div class="dash-card" style="margin-bottom:16px;">
+      <h3>📈 Indicadores de Eficiência</h3>
+      <div id="dashIndicadores"></div>
+    </div>
+
+    <div class="dash-card">
+      <h3>📋 Tabela de Custos por Caminhão</h3>
+      <div class="dash-table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Caminhão</th><th>Placa</th><th>Marca</th><th>Status</th><th>OS</th>
+              <th>Preventiva (R$)</th><th>Corretiva (R$)</th><th>Preditiva (R$)</th>
+              <th>Custo Total (R$)</th><th>% da Frota</th><th>Custo Méd./OS</th>
+            </tr>
+          </thead>
+          <tbody id="dashCustoPorCaminhaoBody"></tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<!-- MODAL VEÍCULO -->
+<div class="modal-overlay" id="vehicleModal">
+  <div class="modal" style="max-width: 520px;">
+    <div class="modal-header">
+      <h3 id="vehicleModalTitle">Novo Veículo</h3>
+      <button class="modal-close" id="closeVehicleModal">&times;</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="vehicleId">
+      <div class="field">
+        <label>ID do Veículo</label>
+        <input type="text" id="vehicleCodigo" disabled>
+      </div>
+      <div class="field">
+        <label>Placa</label>
+        <input type="text" id="vehiclePlaca" placeholder="ABC1D23">
+      </div>
+      <div class="field">
+        <label>Modelo</label>
+        <input type="text" id="vehicleModelo" placeholder="Ex: CARGO 1723">
+      </div>
+      <div class="field">
+        <label>Marca</label>
+        <input type="text" id="vehicleMarca" placeholder="Ex: FORD">
+      </div>
+      <div style="display:flex; gap:12px;">
+        <div class="field" style="flex:1;">
+          <label>Ano</label>
+          <input type="text" id="vehicleAno" placeholder="Ex: 2012/13">
+        </div>
+        <div class="field" style="flex:1;">
+          <label>Cor</label>
+          <input type="text" id="vehicleCor" placeholder="Ex: Branco">
+        </div>
+      </div>
+      <div style="display:flex; gap:12px;">
+        <div class="field" style="flex:1;">
+          <label>Capacidade (t)</label>
+          <input type="number" id="vehicleCapacidade" min="0" step="0.1" placeholder="0">
+        </div>
+        <div class="field" style="flex:1;">
+          <label>Tipo Carroceria</label>
+          <input type="text" id="vehicleCarroceria" placeholder="Ex: Aberta c/ elevador">
+        </div>
+      </div>
+      <div style="display:flex; gap:12px;">
+        <div class="field" style="flex:1;">
+          <label>KM Atual</label>
+          <input type="number" id="vehicleKmAtual" min="0" step="1" placeholder="0">
+        </div>
+        <div class="field" style="flex:1;">
+          <label>KM Últ. Revisão</label>
+          <input type="number" id="vehicleKmUltRevisao" min="0" step="1" placeholder="0">
+        </div>
+      </div>
+      <div class="field">
+        <label>Próxima Revisão (KM)</label>
+        <input type="number" id="vehicleProxRevisao" min="0" step="1" placeholder="0">
+      </div>
+      <div class="field">
+        <label>Data de Licenciamento</label>
+        <input type="date" id="vehicleLicenciamento">
+      </div>
+      <div class="field">
+        <label>Status</label>
+        <select id="vehicleStatus">
+          <option value="Ativo">Ativo</option>
+          <option value="Manutenção">Manutenção</option>
+          <option value="Inativo">Inativo</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Responsável</label>
+        <input type="text" id="vehicleResponsavel" placeholder="Nome do responsável">
+      </div>
+      <div class="field">
+        <label>Link do Documento (opcional)</label>
+        <input type="text" id="vehicleDocumento" placeholder="https://...">
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn secondary" id="cancelVehicleModal">Cancelar</button>
+      <button class="btn" id="saveVehicleModal">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL MANUTENÇÃO -->
+<div class="modal-overlay" id="maintenanceModal">
+  <div class="modal" style="max-width: 560px;">
+    <div class="modal-header">
+      <h3 id="maintenanceModalTitle">Nova Manutenção</h3>
+      <button class="modal-close" id="closeMaintenanceModal">&times;</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="maintenanceId">
+      <div class="field">
+        <label>Nº OS</label>
+        <input type="text" id="maintenanceNumero" disabled>
+      </div>
+      <div class="field">
+        <label>Veículo</label>
+        <select id="maintenanceVeiculo"></select>
+      </div>
+      <div style="display:flex; gap:12px;">
+        <div class="field" style="flex:1;">
+          <label>Tipo</label>
+          <select id="maintenanceTipo">
+            <option>Preventiva</option>
+            <option>Corretiva</option>
+            <option>Preditiva</option>
+          </select>
+        </div>
+        <div class="field" style="flex:1;">
+          <label>Categoria (opcional)</label>
+          <input type="text" id="maintenanceCategoria" placeholder="Ex: Pneus, Motor...">
+        </div>
+      </div>
+      <div class="field">
+        <label>Descrição do Serviço</label>
+        <input type="text" id="maintenanceDescricao" placeholder="Ex: Troca de óleo e filtro">
+      </div>
+      <div style="display:flex; gap:12px;">
+        <div class="field" style="flex:1;">
+          <label>Data de Abertura</label>
+          <input type="date" id="maintenanceDataAbertura">
+        </div>
+        <div class="field" style="flex:1;">
+          <label>Data de Conclusão</label>
+          <input type="date" id="maintenanceDataConclusao">
+        </div>
+      </div>
+      <div class="field">
+        <label>KM na Revisão</label>
+        <input type="number" id="maintenanceKm" min="0" step="1" placeholder="0">
+      </div>
+      <div class="field">
+        <label>Mecânico / Oficina</label>
+        <input type="text" id="maintenanceOficina" placeholder="Nome da oficina ou mecânico">
+      </div>
+      <div style="display:flex; gap:12px;">
+        <div class="field" style="flex:1;">
+          <label>Peças (R$)</label>
+          <input type="number" id="maintenancePecas" min="0" step="0.01" placeholder="0,00">
+        </div>
+        <div class="field" style="flex:1;">
+          <label>Mão de Obra (R$)</label>
+          <input type="number" id="maintenanceMaoObra" min="0" step="0.01" placeholder="0,00">
+        </div>
+      </div>
+      <div class="field">
+        <label>Custo Total (calculado automaticamente)</label>
+        <input type="text" id="maintenanceCustoTotal" disabled style="font-weight:700;">
+      </div>
+      <div class="field">
+        <label>Status</label>
+        <select id="maintenanceStatus">
+          <option>Em Andamento</option>
+          <option>Concluída</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Observações</label>
+        <input type="text" id="maintenanceObservacoes" placeholder="Detalhes adicionais...">
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn secondary" id="cancelMaintenanceModal">Cancelar</button>
+      <button class="btn" id="saveMaintenanceModal">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL PLANO PREVENTIVO -->
+<div class="modal-overlay" id="preventivePlanModal">
+  <div class="modal" style="max-width: 560px;">
+    <div class="modal-header">
+      <h3 id="preventivePlanModalTitle">Novo Item do Plano Preventivo</h3>
+      <button class="modal-close" id="closePreventivePlanModal">&times;</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="preventivePlanId">
+      <div class="field">
+        <label>Veículo</label>
+        <select id="preventivePlanVeiculo"></select>
+      </div>
+      <div class="field">
+        <label>Placa</label>
+        <input type="text" id="preventivePlanPlaca" disabled>
+      </div>
+      <div class="field">
+        <label>Serviço Preventivo</label>
+        <input type="text" id="preventivePlanServico" placeholder="Ex: Troca de óleo">
+      </div>
+      <div style="display:flex; gap:12px;">
+        <div class="field" style="flex:1;">
+          <label>Periodicidade</label>
+          <input type="number" id="preventivePlanPeriodicidade" min="0" step="1" placeholder="Ex: 10000">
+        </div>
+        <div class="field" style="flex:1;">
+          <label>KM ou Meses</label>
+          <select id="preventivePlanUnidade">
+            <option value="KM">KM</option>
+            <option value="Meses">Meses</option>
+          </select>
+        </div>
+      </div>
+      <div class="field">
+        <label>Última Execução</label>
+        <input type="date" id="preventivePlanUltExecucao">
+      </div>
+      <div style="display:flex; gap:12px;">
+        <div class="field" style="flex:1;">
+          <label>Próxima Prev. (data)</label>
+          <input type="date" id="preventivePlanProxPrev">
+        </div>
+        <div class="field" style="flex:1;">
+          <label>KM Previsto</label>
+          <input type="number" id="preventivePlanKmPrevisto" min="0" step="1" placeholder="0">
+        </div>
+      </div>
+      <div class="field">
+        <label>Responsável</label>
+        <input type="text" id="preventivePlanResponsavel" placeholder="Oficina ou pessoa responsável">
+      </div>
+      <div class="field">
+        <label>Custo Estimado (R$)</label>
+        <input type="number" id="preventivePlanCusto" min="0" step="0.01" placeholder="0,00">
+      </div>
+      <div style="display:flex; gap:12px;">
+        <div class="field" style="flex:1;">
+          <label>Status</label>
+          <select id="preventivePlanStatus">
+            <option>Agendado</option>
+            <option>Vencido</option>
+            <option>Concluído</option>
+          </select>
+        </div>
+        <div class="field" style="flex:1;">
+          <label>Prioridade</label>
+          <select id="preventivePlanPrioridade">
+            <option>Alta</option>
+            <option>Média</option>
+            <option>Baixa</option>
+          </select>
+        </div>
+      </div>
+      <div class="field">
+        <label>Observações</label>
+        <input type="text" id="preventivePlanObservacoes" placeholder="Detalhes adicionais...">
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn secondary" id="cancelPreventivePlanModal">Cancelar</button>
+      <button class="btn" id="savePreventivePlanModal">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL USUÁRIOS -->
+<div class="modal-overlay" id="usersModal">
+  <div class="modal">
+    <div class="modal-header">
+      <h3>Gerenciar Usuários</h3>
+      <button class="modal-close" id="closeUsersModal">&times;</button>
+    </div>
+    <div class="modal-body">
+      <div class="table-wrap" style="border-radius:8px;">
+        <table style="min-width:0;">
+          <thead><tr><th>Nome</th><th>Usuário</th><th></th></tr></thead>
+          <tbody id="usersTableBody"></tbody>
+        </table>
+      </div>
+      <div style="border-top:1px solid #eee; margin-top:6px; padding-top:16px;">
+        <div class="field" style="margin-bottom:12px;">
+          <label>Nome</label>
+          <input type="text" id="newUserNome" placeholder="Nome da pessoa">
+        </div>
+        <div class="field" style="margin-bottom:12px;">
+          <label>Usuário</label>
+          <input type="text" id="newUserUsuario" placeholder="usuario.login">
+        </div>
+        <div class="field">
+          <label>Senha</label>
+          <input type="text" id="newUserSenha" placeholder="senha de acesso">
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn secondary" id="cancelUsersModal">Fechar</button>
+      <button class="btn" id="saveNewUser">+ Adicionar usuário</button>
+    </div>
+  </div>
+</div>
+
+
+<!-- MODAL GERENCIAR ITENS DO CHECKLIST -->
+<div class="modal-overlay" id="checklistItemsModal">
+  <div class="modal" style="max-width: 640px;">
+    <div class="modal-header">
+      <h3>Editar Itens do Checklist</h3>
+      <button class="modal-close" id="closeChecklistItemsModal">&times;</button>
+    </div>
+    <div class="modal-body">
+      <div id="checklistItemsManageList" style="display:flex; flex-direction:column; gap:6px;"></div>
+      <div style="display:flex; gap:10px; border-top:1px solid #eee; padding-top:16px;">
+        <button class="btn secondary small" id="btnAddChecklistCategory">+ Nova Categoria</button>
+        <button class="btn secondary small" id="btnAddChecklistItem">+ Novo Item</button>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn" id="closeChecklistItemsModalBtn">Concluído</button>
+    </div>
+  </div>
+</div>
+
+<!-- ÁREA DE IMPRESSÃO (usada só na hora de imprimir) -->
+<div id="printArea"></div>
+
+<div class="toast" id="toast"></div>
+
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+<script>
+// ============ FIREBASE ============
+// IMPORTANTE: troque pelos dados do NOVO projeto Firebase criado para este app
+const firebaseConfig = {
+  apiKey: "AIzaSyB2oT66db6YeWmOPKNn_bTKtdNr60lj4vM",
+  authDomain: "gestao-de-manutencao-de-a374e.firebaseapp.com",
+  projectId: "gestao-de-manutencao-de-a374e",
+  storageBucket: "gestao-de-manutencao-de-a374e.firebasestorage.app",
+  messagingSenderId: "1081278946985",
+  appId: "1:1081278946985:web:a3b1bcffd220799fce93b8"
+};
+firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
+
+// ============ CONFIG ============
+let vehicles = [];      // [{id, codigo, placa, modelo, marca, ano, cor, capacidade, carroceria, kmAtual, kmUltRevisao, proxRevisao, licenciamento, status, responsavel, documento}]
+let users = [];
+let currentUser = null;
+
+// ============ STORAGE HELPERS (Firebase Firestore) ============
+async function storageGet(key, fallback) {
+  try {
+    const doc = await db.collection('app_data').doc(key).get();
+    return doc.exists ? JSON.parse(doc.data().value) : fallback;
+  } catch (e) {
+    console.error('Erro ao ler', key, e);
+    return fallback;
+  }
+}
+async function storageSet(key, value) {
+  setSyncStatus('saving');
+  try {
+    await db.collection('app_data').doc(key).set({ value: JSON.stringify(value), updatedAt: Date.now() });
+    setSyncStatus('ok');
+  } catch (e) {
+    setSyncStatus('error');
+    console.error('Erro ao salvar', key, e);
+  }
+}
+
+function setSyncStatus(state) {
+  const dot = document.getElementById('syncDot');
+  const text = document.getElementById('syncText');
+  dot.className = 'sync-dot';
+  if (state === 'saving') { dot.classList.add('saving'); text.textContent = 'Salvando...'; }
+  else if (state === 'error') { dot.classList.add('error'); text.textContent = 'Erro ao salvar'; }
+  else { text.textContent = 'Sincronizado'; }
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2200);
+}
+
+function formatBRL(v) {
+  return (v || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+}
+function formatDateBR(iso) {
+  if (!iso) return '-';
+  const [y, m, d] = iso.split('-');
+  return `${d}/${m}/${y}`;
+}
+
+// ============ AUTENTICAÇÃO ============
+function getLogoSrc() {
+  const headerImg = document.querySelector('.header-left img');
+  return headerImg ? headerImg.src : '';
+}
+function nextUserId() { return 'user_' + Date.now(); }
+
+async function loadUsers() {
+  users = await storageGet('app_users', []);
+}
+
+function showLoginScreen() {
+  document.getElementById('loginLogo').src = getLogoSrc();
+  document.getElementById('appHeader').classList.add('app-hidden');
+  document.getElementById('appMain').classList.add('app-hidden');
+  document.getElementById('loginScreen').classList.remove('hidden');
+
+  const isFirstRun = users.length === 0;
+  document.getElementById('loginNomeField').style.display = isFirstRun ? 'block' : 'none';
+  document.getElementById('loginTitle').textContent = isFirstRun ? 'Criar primeiro acesso' : 'Entrar no sistema';
+  document.getElementById('loginSubtitle').textContent = isFirstRun
+    ? 'Nenhum usuário cadastrado ainda. Crie o seu para começar.'
+    : 'Acesso restrito à equipe de frota';
+  document.getElementById('btnDoLogin').textContent = isFirstRun ? 'Criar e entrar' : 'Entrar';
+  document.getElementById('loginHint').textContent = isFirstRun
+    ? '' : 'Esqueceu a senha? Peça para o gestor te cadastrar novamente em "Usuários".';
+  document.getElementById('loginError').textContent = '';
+  document.getElementById('loginUsuario').value = '';
+  document.getElementById('loginSenha').value = '';
+  document.getElementById('loginNome').value = '';
+}
+
+function hideLoginScreen() {
+  document.getElementById('loginScreen').classList.add('hidden');
+  document.getElementById('appHeader').classList.remove('app-hidden');
+  document.getElementById('appMain').classList.remove('app-hidden');
+  document.getElementById('headerUserLabel').textContent = currentUser ? `Olá, ${currentUser.nome}` : '';
+}
+
+async function doLogin() {
+  const errorEl = document.getElementById('loginError');
+  errorEl.textContent = '';
+
+  const usuario = document.getElementById('loginUsuario').value.trim();
+  const senha = document.getElementById('loginSenha').value;
+  const remember = document.getElementById('loginRemember').checked;
+  const isFirstRun = users.length === 0;
+
+  if (!usuario || !senha) { errorEl.textContent = 'Preencha usuário e senha.'; return; }
+
+  if (isFirstRun) {
+    const nome = document.getElementById('loginNome').value.trim();
+    if (!nome) { errorEl.textContent = 'Informe seu nome.'; return; }
+    const newUser = { id: nextUserId(), nome, usuario, senha };
+    users.push(newUser);
+    await storageSet('app_users', users);
+    currentUser = newUser;
+    if (remember) rememberUser(usuario, senha); else forgetRememberedUser();
+    hideLoginScreen();
+    await startApp();
+    return;
+  }
+
+  const found = users.find(u => u.usuario === usuario && u.senha === senha);
+  if (!found) { errorEl.textContent = 'Usuário ou senha incorretos.'; return; }
+  currentUser = found;
+  if (remember) rememberUser(usuario, senha); else forgetRememberedUser();
+  hideLoginScreen();
+  await startApp();
+}
+
+function rememberUser(usuario, senha) {
+  try { localStorage.setItem('gestaoFrotaRememberedUser', JSON.stringify({ usuario, senha })); } catch (e) {}
+}
+function forgetRememberedUser() {
+  try { localStorage.removeItem('gestaoFrotaRememberedUser'); } catch (e) {}
+}
+function getRememberedUser() {
+  try {
+    const raw = localStorage.getItem('gestaoFrotaRememberedUser');
+    return raw ? JSON.parse(raw) : null;
+  } catch (e) { return null; }
+}
+async function tryAutoLogin() {
+  const remembered = getRememberedUser();
+  if (!remembered) return false;
+  const found = users.find(u => u.usuario === remembered.usuario && u.senha === remembered.senha);
+  if (!found) { forgetRememberedUser(); return false; }
+  currentUser = found;
+  hideLoginScreen();
+  await startApp();
+  return true;
+}
+function doLogout() {
+  currentUser = null;
+  forgetRememberedUser();
+  showLoginScreen();
+}
+
+function renderUsersTable() {
+  const tbody = document.getElementById('usersTableBody');
+  tbody.innerHTML = '';
+  if (users.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="3"><div class="empty-state">Nenhum usuário cadastrado.</div></td></tr>`;
+    return;
+  }
+  users.forEach(u => {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td>${u.nome}</td>
+      <td>${u.usuario}</td>
+      <td><button class="btn danger small" data-del-user="${u.id}">Excluir</button></td>
+    `;
+    tbody.appendChild(tr);
+  });
+  tbody.querySelectorAll('[data-del-user]').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      if (users.length === 1) { showToast('É preciso manter pelo menos um usuário.'); return; }
+      if (!confirm('Excluir este usuário?')) return;
+      users = users.filter(u => u.id !== btn.dataset.delUser);
+      await storageSet('app_users', users);
+      renderUsersTable();
+      showToast('Usuário excluído');
+    });
+  });
+}
+
+async function saveNewUser() {
+  const nome = document.getElementById('newUserNome').value.trim();
+  const usuario = document.getElementById('newUserUsuario').value.trim();
+  const senha = document.getElementById('newUserSenha').value;
+  if (!nome || !usuario || !senha) { showToast('Preencha nome, usuário e senha.'); return; }
+  if (users.some(u => u.usuario === usuario)) { showToast('Já existe um usuário com esse login.'); return; }
+  users.push({ id: nextUserId(), nome, usuario, senha });
+  await storageSet('app_users', users);
+  renderUsersTable();
+  document.getElementById('newUserNome').value = '';
+  document.getElementById('newUserUsuario').value = '';
+  document.getElementById('newUserSenha').value = '';
+  showToast('Usuário adicionado');
+}
+
+document.getElementById('btnDoLogin').addEventListener('click', doLogin);
+['loginUsuario','loginSenha','loginNome'].forEach(id => {
+  document.getElementById(id).addEventListener('keydown', (e) => { if (e.key === 'Enter') doLogin(); });
+});
+document.getElementById('btnLogout').addEventListener('click', doLogout);
+document.getElementById('btnManageUsers').addEventListener('click', () => {
+  renderUsersTable();
+  document.getElementById('usersModal').classList.add('active');
+});
+document.getElementById('closeUsersModal').addEventListener('click', () => document.getElementById('usersModal').classList.remove('active'));
+document.getElementById('cancelUsersModal').addEventListener('click', () => document.getElementById('usersModal').classList.remove('active'));
+document.getElementById('saveNewUser').addEventListener('click', saveNewUser);
+
+// ============ TABS ============
+document.getElementById('tabNav').addEventListener('click', (e) => {
+  const btn = e.target.closest('button[data-tab]');
+  if (!btn) return;
+  document.querySelectorAll('nav button').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  document.getElementById('tab-' + btn.dataset.tab).classList.add('active');
+
+  if (btn.dataset.tab === 'dashboard') {
+    initDashboardDefaults();
+    renderDashboard();
+  }
+});
+
+// ============ CADASTRO DE FROTA ============
+let vehicleSearchTerm = '';
+
+// ============ IMPORTAÇÃO DA FROTA (dados da planilha original) ============
+const FLEET_IMPORT_DATA = [{"codigo": "CAM-001", "placa": "ABM6C91", "modelo": "DAILY", "marca": "IVECO", "ano": "21/22", "cor": "BRANCO", "capacidade": 20, "carroceria": "ABERTA", "kmAtual": 0, "kmUltRevisao": 0, "proxRevisao": 0, "licenciamento": "", "status": "Ativo", "responsavel": "", "documento": "file:///Z:/ARQUIVOS/GI..KARINA..NATY/GISLAINE/DOC%20VEICULOS/ABM-6C91.pdf"}, {"codigo": "CAM-002", "placa": "AKE2319", "modelo": "CARGO 1421", "marca": "FORD", "ano": "2002", "cor": "BRANCO", "capacidade": 20, "carroceria": "ABERTA C/ ELEVADOR", "kmAtual": 0, "kmUltRevisao": 0, "proxRevisao": 0, "licenciamento": "", "status": "Ativo", "responsavel": "", "documento": "file:///Z:/ARQUIVOS/GI..KARINA..NATY/GISLAINE/DOC%20VEICULOS/AKE-2319.pdf"}, {"codigo": "CAM-003", "placa": "ALY9377", "modelo": "6000 D", "marca": "AGRALE", "ano": "2004", "cor": "VERMELHO", "capacidade": 20, "carroceria": "ABERTA C/ ELEVADOR", "kmAtual": 0, "kmUltRevisao": 0, "proxRevisao": 0, "licenciamento": "", "status": "Ativo", "responsavel": "", "documento": "file:///Z:/ARQUIVOS/GI..KARINA..NATY/GISLAINE/DOC%20VEICULOS/ALY-9377.pdf"}, {"codigo": "CAM-004", "placa": "ANO7H30", "modelo": "TECTOR 240E28", "marca": "IVECO", "ano": "13/14", "cor": "CINZA", "capacidade": 20, "carroceria": "TANQUE OXIGÊNIO", "kmAtual": 0, "kmUltRevisao": 0, "proxRevisao": 0, "licenciamento": "", "status": "Ativo", "responsavel": "", "documento": "file:///Z:/ARQUIVOS/GI..KARINA..NATY/GISLAINE/DOC%20VEICULOS/ANO-7H30.pdf"}, {"codigo": "CAM-005", "placa": "ANY9I65", "modelo": "915C", "marca": "M. BENZ", "ano": "2006", "cor": "BRANCO", "capacidade": 20, "carroceria": "ABERTA C/ ELEVADOR", "kmAtual": 0, "kmUltRevisao": 0, "proxRevisao": 0, "licenciamento": "", "status": "Ativo", "responsavel": "", "documento": "file:///Z:/ARQUIVOS/GI..KARINA..NATY/GISLAINE/DOC%20VEICULOS/ANY-9I65.pdf"}, {"codigo": "CAM-006", "placa": "APW8B31", "modelo": "CARGO 815 E", "marca": "FORD", "ano": "2008", "cor": "BRANCO", "capacidade": 20, "carroceria": "ABERTA", "kmAtual": 0, "kmUltRevisao": 0, "proxRevisao": 0, "licenciamento": "", "status": "Ativo", "responsavel": "", "documento": "file:///Z:/ARQUIVOS/GI..KARINA..NATY/GISLAINE/DOC%20VEICULOS/APW-8B31.pdf"}, {"codigo": "CAM-007", "placa": "ASY0I46", "modelo": "24.250 CNC 6X2", "marca": "VW", "ano": "2010", "cor": "BRANCO", "capacidade": 20, "carroceria": "TANQUE OXIGÊNIO/NITRO", "kmAtual": 0, "kmUltRevisao": 0, "proxRevisao": 0, "licenciamento": "", "status": "Ativo", "responsavel": "", "documento": "file:///Z:/ARQUIVOS/GI..KARINA..NATY/GISLAINE/DOC%20VEICULOS/ASY-0I46.pdf"}, {"codigo": "CAM-008", "placa": "ATG2J60", "modelo": "17.250 CNC", "marca": "VW", "ano": "2010/11", "cor": "BRANCO", "capacidade": 20, "carroceria": "ABERTA C/ ELEVADOR", "kmAtual": 0, "kmUltRevisao": 0, "proxRevisao": 0, "licenciamento": "", "status": "Manutenção", "responsavel": "", "documento": "file:///Z:/ARQUIVOS/GI..KARINA..NATY/GISLAINE/DOC%20VEICULOS/ATG-2J60.pdf"}, {"codigo": "CAM-009", "placa": "AVD3B58", "modelo": "24.250 CNC 8X2", "marca": "VW", "ano": "2011/12", "cor": "BRANCO", "capacidade": 20, "carroceria": "TANQUE CO2", "kmAtual": 0, "kmUltRevisao": 0, "proxRevisao": 0, "licenciamento": "", "status": "Ativo", "responsavel": "", "documento": "file:///Z:/ARQUIVOS/GI..KARINA..NATY/GISLAINE/DOC%20VEICULOS/AVD-3B58.pdf"}, {"codigo": "CAM-010", "placa": "AVL9347", "modelo": "ACCELO 1016", "marca": "M. BENZ", "ano": "2012/12", "cor": "BRANCO", "capacidade": 20, "carroceria": "ABERTA", "kmAtual": 0, "kmUltRevisao": 0, "proxRevisao": 0, "licenciamento": "", "status": "Ativo", "responsavel": "", "documento": "file:///Z:/ARQUIVOS/GI..KARINA..NATY/GISLAINE/DOC%20VEICULOS/AVL-9D47.pdf"}, {"codigo": "CAM-011", "placa": "AWD6107", "modelo": "CARGO 1723", "marca": "FORD", "ano": "2012/13", "cor": "BRANCO", "capacidade": 20, "carroceria": "ABERTA C/ ELEVADOR", "kmAtual": 0, "kmUltRevisao": 0, "proxRevisao": 0, "licenciamento": "", "status": "Ativo", "responsavel": "", "documento": "file:///Z:/ARQUIVOS/GI..KARINA..NATY/GISLAINE/DOC%20VEICULOS/AWD-6107.pdf"}, {"codigo": "CAM-012", "placa": "AZI6A02", "modelo": "17.280 4X2", "marca": "VW", "ano": "2022/23", "cor": "BRANCO", "capacidade": 20, "carroceria": "ABERTA C/ ELEVADOR", "kmAtual": 0, "kmUltRevisao": 0, "proxRevisao": 0, "licenciamento": "", "status": "Ativo", "responsavel": "", "documento": "file:///Z:/ARQUIVOS/GI..KARINA..NATY/GISLAINE/DOC%20VEICULOS/AZI-6A02.pdf"}, {"codigo": "CAM-013", "placa": "BTR8H86", "modelo": "T113", "marca": "SCANIA", "ano": "1997/98", "cor": "BRANCO", "capacidade": 20, "carroceria": "CARRETA", "kmAtual": 0, "kmUltRevisao": 0, "proxRevisao": 0, "licenciamento": "", "status": "Ativo", "responsavel": "", "documento": "file:///Z:/ARQUIVOS/GI..KARINA..NATY/GISLAINE/DOC%20VEICULOS/BTR-8H86.pdf"}, {"codigo": "CAM-014", "placa": "DPE8D79", "modelo": "24.250 6X2", "marca": "VW", "ano": "2007/08", "cor": "PRATA", "capacidade": 20, "carroceria": "ABERTA C/ ELEVADOR", "kmAtual": 0, "kmUltRevisao": 0, "proxRevisao": 0, "licenciamento": "", "status": "Ativo", "responsavel": "", "documento": "file:///Z:/ARQUIVOS/GI..KARINA..NATY/GISLAINE/DOC%20VEICULOS/DPE-8D79.pdf"}, {"codigo": "CAM-015", "placa": "DUM8E62", "modelo": "314 CDSTREET C", "marca": "I/M. BENZ", "ano": "2021/22", "cor": "BRANCO", "capacidade": 20, "carroceria": "ABERTA", "kmAtual": 0, "kmUltRevisao": 0, "proxRevisao": 0, "licenciamento": "", "status": "Ativo", "responsavel": "", "documento": "file:///Z:/ARQUIVOS/GI..KARINA..NATY/GISLAINE/DOC%20VEICULOS/DUM-8E62.pdf"}, {"codigo": "CAM-016", "placa": "IRC9J05", "modelo": "24.250 6X2", "marca": "VW", "ano": "2010/11", "cor": "VERMELHO", "capacidade": 20, "carroceria": "ABERTA C/ ELEVADOR", "kmAtual": 0, "kmUltRevisao": 0, "proxRevisao": 0, "licenciamento": "", "status": "Ativo", "responsavel": "", "documento": "file:///Z:/ARQUIVOS/GI..KARINA..NATY/GISLAINE/DOC%20VEICULOS/IRC-9J05.pdf"}, {"codigo": "CAM-017", "placa": "MAP2H51", "modelo": "8.150E DELIVERY", "marca": "VW", "ano": "2006", "cor": "BRANCO", "capacidade": 20, "carroceria": "ABERTA C/ ELEVADOR", "kmAtual": 0, "kmUltRevisao": 0, "proxRevisao": 0, "licenciamento": "", "status": "Ativo", "responsavel": "", "documento": "file:///Z:/ARQUIVOS/GI..KARINA..NATY/GISLAINE/DOC%20VEICULOS/MAP-2H51.pdf"}, {"codigo": "CAM-018", "placa": "SDZ0I57", "modelo": "STRADA FREEDOM", "marca": "FIAT", "ano": "2022/23", "cor": "BRANCO", "capacidade": 20, "carroceria": "ABERTA", "kmAtual": 0, "kmUltRevisao": 0, "proxRevisao": 0, "licenciamento": "", "status": "Inativo", "responsavel": "", "documento": "file:///Z:/ARQUIVOS/GI..KARINA..NATY/GISLAINE/DOC%20VEICULOS/SDZ-0I57.pdf"}, {"codigo": "CAM-019", "placa": "TAN7G63", "modelo": "STRADA FREEDOM", "marca": "FIAT", "ano": "2024/25", "cor": "BRANCO", "capacidade": 20, "carroceria": "ABERTA", "kmAtual": 0, "kmUltRevisao": 0, "proxRevisao": 0, "licenciamento": "", "status": "Ativo", "responsavel": "", "documento": "file:///Z:/ARQUIVOS/GI..KARINA..NATY/GISLAINE/DOC%20VEICULOS/TAN-7G63.pdf"}, {"codigo": "CAM-020", "placa": "TAU0I90", "modelo": "30.320 8X2", "marca": "VW", "ano": "2024/25", "cor": "BRANCO", "capacidade": 20, "carroceria": "TANQUE ARGÔNIO", "kmAtual": 0, "kmUltRevisao": 0, "proxRevisao": 0, "licenciamento": "", "status": "Ativo", "responsavel": "", "documento": "file:///Z:/ARQUIVOS/GI..KARINA..NATY/GISLAINE/DOC%20VEICULOS/TAU-0I90.pdf"}, {"codigo": "CAM-021", "placa": "TBZ7F14", "modelo": "417 SPRINTER C", "marca": "I/M. BENZ", "ano": "2025/26", "cor": "BRANCO", "capacidade": 20, "carroceria": "ABERTA", "kmAtual": 0, "kmUltRevisao": 0, "proxRevisao": 0, "licenciamento": "", "status": "Ativo", "responsavel": "", "documento": "file:///Z:/ARQUIVOS/GI..KARINA..NATY/GISLAINE/DOC%20VEICULOS/TBZ-7F14.pdf"}];
+
+async function importFleetFromSpreadsheet() {
+  const existingCodes = new Set(vehicles.map(v => v.codigo));
+  const toAdd = FLEET_IMPORT_DATA.filter(v => !existingCodes.has(v.codigo));
+
+  if (toAdd.length === 0) {
+    showToast('Todos esses veículos já estão cadastrados.');
+    return;
+  }
+
+  if (!confirm(`Importar ${toAdd.length} veículo(s) da planilha original? Veículos já cadastrados (mesmo código) não serão duplicados.`)) return;
+
+  toAdd.forEach(v => {
+    vehicles.push({ id: 'veh_' + Date.now() + '_' + v.codigo, ...v });
+  });
+
+  await storageSet('vehicles', vehicles);
+  renderVehiclesTable();
+  showToast(`${toAdd.length} veículo(s) importado(s) com sucesso!`);
+}
+
+document.getElementById('btnImportFleet').addEventListener('click', importFleetFromSpreadsheet);
+
+function nextVehicleCode() {
+  const nums = vehicles
+    .map(v => parseInt((v.codigo || '').replace('CAM-', ''), 10))
+    .filter(n => !isNaN(n));
+  const next = (nums.length ? Math.max(...nums) : 0) + 1;
+  return 'CAM-' + String(next).padStart(3, '0');
+}
+
+function vehicleStatusBadgeClass(status) {
+  if (status === 'Ativo') return 'badge-ativo';
+  if (status === 'Inativo') return 'badge-inativo';
+  return 'badge-manutencao';
+}
+
+function renderVehiclesTable() {
+  const tbody = document.getElementById('vehiclesTableBody');
+  tbody.innerHTML = '';
+
+  const term = vehicleSearchTerm.trim().toLowerCase();
+  const filtered = term
+    ? vehicles.filter(v =>
+        (v.codigo || '').toLowerCase().includes(term) ||
+        (v.placa || '').toLowerCase().includes(term) ||
+        (v.modelo || '').toLowerCase().includes(term) ||
+        (v.marca || '').toLowerCase().includes(term)
+      )
+    : vehicles;
+
+  if (vehicles.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="16"><div class="empty-state">Nenhum veículo cadastrado ainda.</div></td></tr>`;
+    return;
+  }
+  if (filtered.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="16"><div class="empty-state">Nenhum veículo encontrado para "${vehicleSearchTerm}".</div></td></tr>`;
+    return;
+  }
+
+  filtered.forEach(v => {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td>${v.codigo}</td>
+      <td>${v.placa || '-'}</td>
+      <td>${v.modelo || '-'}</td>
+      <td>${v.marca || '-'}</td>
+      <td>${v.ano || '-'}</td>
+      <td>${v.cor || '-'}</td>
+      <td>${v.capacidade || 0}</td>
+      <td>${v.carroceria || '-'}</td>
+      <td>${v.kmAtual ? Number(v.kmAtual).toLocaleString('pt-BR') : '-'}</td>
+      <td>${v.kmUltRevisao ? Number(v.kmUltRevisao).toLocaleString('pt-BR') : '-'}</td>
+      <td>${v.proxRevisao ? Number(v.proxRevisao).toLocaleString('pt-BR') : '-'}</td>
+      <td>${formatDateBR(v.licenciamento)}</td>
+      <td><span class="badge ${vehicleStatusBadgeClass(v.status)}">${v.status}</span></td>
+      <td>${v.responsavel || '-'}</td>
+      <td>${v.documento ? `<a href="${v.documento}" target="_blank" rel="noopener">Ver</a>` : '-'}</td>
+      <td>
+        <button class="btn secondary small" data-edit-vehicle="${v.id}">Editar</button>
+        <button class="btn danger small" data-del-vehicle="${v.id}">Excluir</button>
+      </td>
+    `;
+    tbody.appendChild(tr);
+  });
+
+  tbody.querySelectorAll('[data-edit-vehicle]').forEach(btn => {
+    btn.addEventListener('click', () => openVehicleModal(btn.dataset.editVehicle));
+  });
+  tbody.querySelectorAll('[data-del-vehicle]').forEach(btn => {
+    btn.addEventListener('click', () => deleteVehicle(btn.dataset.delVehicle));
+  });
+}
+
+function openVehicleModal(id) {
+  const modal = document.getElementById('vehicleModal');
+  const title = document.getElementById('vehicleModalTitle');
+
+  if (id) {
+    const v = vehicles.find(x => x.id === id);
+    title.textContent = 'Editar Veículo';
+    document.getElementById('vehicleId').value = v.id;
+    document.getElementById('vehicleCodigo').value = v.codigo;
+    document.getElementById('vehiclePlaca').value = v.placa || '';
+    document.getElementById('vehicleModelo').value = v.modelo || '';
+    document.getElementById('vehicleMarca').value = v.marca || '';
+    document.getElementById('vehicleAno').value = v.ano || '';
+    document.getElementById('vehicleCor').value = v.cor || '';
+    document.getElementById('vehicleCapacidade').value = v.capacidade || '';
+    document.getElementById('vehicleCarroceria').value = v.carroceria || '';
+    document.getElementById('vehicleKmAtual').value = v.kmAtual || '';
+    document.getElementById('vehicleKmUltRevisao').value = v.kmUltRevisao || '';
+    document.getElementById('vehicleProxRevisao').value = v.proxRevisao || '';
+    document.getElementById('vehicleLicenciamento').value = v.licenciamento || '';
+    document.getElementById('vehicleStatus').value = v.status || 'Ativo';
+    document.getElementById('vehicleResponsavel').value = v.responsavel || '';
+    document.getElementById('vehicleDocumento').value = v.documento || '';
+  } else {
+    title.textContent = 'Novo Veículo';
+    document.getElementById('vehicleId').value = '';
+    document.getElementById('vehicleCodigo').value = nextVehicleCode();
+    document.getElementById('vehiclePlaca').value = '';
+    document.getElementById('vehicleModelo').value = '';
+    document.getElementById('vehicleMarca').value = '';
+    document.getElementById('vehicleAno').value = '';
+    document.getElementById('vehicleCor').value = '';
+    document.getElementById('vehicleCapacidade').value = '';
+    document.getElementById('vehicleCarroceria').value = '';
+    document.getElementById('vehicleKmAtual').value = '';
+    document.getElementById('vehicleKmUltRevisao').value = '';
+    document.getElementById('vehicleProxRevisao').value = '';
+    document.getElementById('vehicleLicenciamento').value = '';
+    document.getElementById('vehicleStatus').value = 'Ativo';
+    document.getElementById('vehicleResponsavel').value = '';
+    document.getElementById('vehicleDocumento').value = '';
+  }
+  modal.classList.add('active');
+}
+
+function closeVehicleModal() {
+  document.getElementById('vehicleModal').classList.remove('active');
+}
+
+async function saveVehicle() {
+  const placa = document.getElementById('vehiclePlaca').value.trim();
+  if (!placa) { showToast('Informe a placa do veículo'); return; }
+
+  const id = document.getElementById('vehicleId').value;
+  const data = {
+    id: id || 'veh_' + Date.now(),
+    codigo: document.getElementById('vehicleCodigo').value,
+    placa,
+    modelo: document.getElementById('vehicleModelo').value.trim(),
+    marca: document.getElementById('vehicleMarca').value.trim(),
+    ano: document.getElementById('vehicleAno').value.trim(),
+    cor: document.getElementById('vehicleCor').value.trim(),
+    capacidade: parseFloat(document.getElementById('vehicleCapacidade').value) || 0,
+    carroceria: document.getElementById('vehicleCarroceria').value.trim(),
+    kmAtual: parseFloat(document.getElementById('vehicleKmAtual').value) || 0,
+    kmUltRevisao: parseFloat(document.getElementById('vehicleKmUltRevisao').value) || 0,
+    proxRevisao: parseFloat(document.getElementById('vehicleProxRevisao').value) || 0,
+    licenciamento: document.getElementById('vehicleLicenciamento').value,
+    status: document.getElementById('vehicleStatus').value,
+    responsavel: document.getElementById('vehicleResponsavel').value.trim(),
+    documento: document.getElementById('vehicleDocumento').value.trim()
+  };
+
+  if (id) {
+    const idx = vehicles.findIndex(v => v.id === id);
+    vehicles[idx] = data;
+  } else {
+    vehicles.push(data);
+  }
+
+  await storageSet('vehicles', vehicles);
+  renderVehiclesTable();
+  closeVehicleModal();
+  showToast('Veículo salvo com sucesso');
+}
+
+async function deleteVehicle(id) {
+  if (!confirm('Tem certeza que deseja excluir este veículo?')) return;
+  vehicles = vehicles.filter(v => v.id !== id);
+  await storageSet('vehicles', vehicles);
+  renderVehiclesTable();
+  showToast('Veículo excluído');
+}
+
+document.getElementById('btnNewVehicle').addEventListener('click', () => openVehicleModal(null));
+document.getElementById('closeVehicleModal').addEventListener('click', closeVehicleModal);
+document.getElementById('cancelVehicleModal').addEventListener('click', closeVehicleModal);
+document.getElementById('saveVehicleModal').addEventListener('click', saveVehicle);
+document.getElementById('vehicleModal').addEventListener('click', (e) => {
+  if (e.target.id === 'vehicleModal') closeVehicleModal();
+});
+document.getElementById('vehicleSearchInput').addEventListener('input', (e) => {
+  vehicleSearchTerm = e.target.value;
+  renderVehiclesTable();
+});
+
+// ============ MANUTENÇÕES ============
+let maintenances = [];
+let maintenanceSearchTerm = '';
+
+function nextMaintenanceNumber() {
+  const year = new Date().getFullYear();
+  const nums = maintenances
+    .filter(m => (m.numero || '').includes(`OS-${year}-`))
+    .map(m => parseInt((m.numero || '').split('-').pop(), 10))
+    .filter(n => !isNaN(n));
+  const next = (nums.length ? Math.max(...nums) : 0) + 1;
+  return `OS-${year}-` + String(next).padStart(3, '0');
+}
+
+function maintenanceStatusBadgeClass(status) {
+  return status === 'Concluída' ? 'badge-ok' : 'badge-atencao';
+}
+
+function maintenanceTypeBadgeClass(tipo) {
+  if (tipo === 'Preventiva') return 'badge-info';
+  if (tipo === 'Corretiva') return 'badge-estourado';
+  return 'badge-purple';
+}
+
+function calcDiasConclusao(abertura, conclusao) {
+  if (!abertura || !conclusao) return null;
+  const d1 = new Date(abertura);
+  const d2 = new Date(conclusao);
+  const diff = Math.round((d2 - d1) / (1000 * 60 * 60 * 24));
+  return diff >= 0 ? diff : null;
+}
+
+function populateMaintenanceVehicleSelect() {
+  const sel = document.getElementById('maintenanceVeiculo');
+  if (vehicles.length === 0) {
+    sel.innerHTML = `<option value="">Nenhum veículo cadastrado</option>`;
+  } else {
+    sel.innerHTML = vehicles.map(v => `<option value="${v.id}">${v.codigo} — ${v.placa}${v.modelo ? ' (' + v.modelo + ')' : ''}</option>`).join('');
+  }
+}
+
+function renderMaintenancesTable() {
+  const tbody = document.getElementById('maintenancesTableBody');
+  tbody.innerHTML = '';
+
+  const term = maintenanceSearchTerm.trim().toLowerCase();
+  const filteredBase = term
+    ? maintenances.filter(m => {
+        const v = vehicles.find(x => x.id === m.veiculoId);
+        return (m.numero || '').toLowerCase().includes(term) ||
+          (v && (v.codigo || '').toLowerCase().includes(term)) ||
+          (v && (v.placa || '').toLowerCase().includes(term)) ||
+          (m.descricao || '').toLowerCase().includes(term) ||
+          (m.oficina || '').toLowerCase().includes(term) ||
+          (m.categoria || '').toLowerCase().includes(term);
+      })
+    : maintenances;
+
+  if (maintenances.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="16"><div class="empty-state">Nenhuma manutenção registrada ainda.</div></td></tr>`;
+    return;
+  }
+  if (filteredBase.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="16"><div class="empty-state">Nenhuma manutenção encontrada para "${maintenanceSearchTerm}".</div></td></tr>`;
+    return;
+  }
+
+  const sorted = [...filteredBase].sort((a, b) => (b.numero || '').localeCompare(a.numero || ''));
+
+  sorted.forEach(m => {
+    const v = vehicles.find(x => x.id === m.veiculoId);
+    const dias = calcDiasConclusao(m.dataAbertura, m.dataConclusao);
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td>${m.numero}</td>
+      <td>${v ? v.codigo : '-'}</td>
+      <td>${v ? v.placa : '-'}</td>
+      <td><span class="badge ${maintenanceTypeBadgeClass(m.tipo)}">${m.tipo}</span></td>
+      <td>${m.categoria || '-'}</td>
+      <td>${m.descricao || '-'}</td>
+      <td>${formatDateBR(m.dataAbertura)}</td>
+      <td>${formatDateBR(m.dataConclusao)}</td>
+      <td>${dias !== null ? dias : '-'}</td>
+      <td>${m.km ? Number(m.km).toLocaleString('pt-BR') : '-'}</td>
+      <td>${m.oficina || '-'}</td>
+      <td>${formatBRL(m.pecas)}</td>
+      <td>${formatBRL(m.maoObra)}</td>
+      <td>${formatBRL(m.custoTotal)}</td>
+      <td><span class="badge ${maintenanceStatusBadgeClass(m.status)}">${m.status}</span></td>
+      <td>
+        <button class="btn secondary small" data-edit-maintenance="${m.id}">Editar</button>
+        <button class="btn danger small" data-del-maintenance="${m.id}">Excluir</button>
+      </td>
+    `;
+    tbody.appendChild(tr);
+  });
+
+  tbody.querySelectorAll('[data-edit-maintenance]').forEach(btn => {
+    btn.addEventListener('click', () => openMaintenanceModal(btn.dataset.editMaintenance));
+  });
+  tbody.querySelectorAll('[data-del-maintenance]').forEach(btn => {
+    btn.addEventListener('click', () => deleteMaintenance(btn.dataset.delMaintenance));
+  });
+}
+
+function updateMaintenanceCustoTotal() {
+  const pecas = parseFloat(document.getElementById('maintenancePecas').value) || 0;
+  const maoObra = parseFloat(document.getElementById('maintenanceMaoObra').value) || 0;
+  document.getElementById('maintenanceCustoTotal').value = formatBRL(pecas + maoObra);
+}
+
+function openMaintenanceModal(id) {
+  populateMaintenanceVehicleSelect();
+  const modal = document.getElementById('maintenanceModal');
+  const title = document.getElementById('maintenanceModalTitle');
+
+  if (id) {
+    const m = maintenances.find(x => x.id === id);
+    title.textContent = 'Editar Manutenção';
+    document.getElementById('maintenanceId').value = m.id;
+    document.getElementById('maintenanceNumero').value = m.numero;
+    document.getElementById('maintenanceVeiculo').value = m.veiculoId || '';
+    document.getElementById('maintenanceTipo').value = m.tipo || 'Preventiva';
+    document.getElementById('maintenanceCategoria').value = m.categoria || '';
+    document.getElementById('maintenanceDescricao').value = m.descricao || '';
+    document.getElementById('maintenanceDataAbertura').value = m.dataAbertura || '';
+    document.getElementById('maintenanceDataConclusao').value = m.dataConclusao || '';
+    document.getElementById('maintenanceKm').value = m.km || '';
+    document.getElementById('maintenanceOficina').value = m.oficina || '';
+    document.getElementById('maintenancePecas').value = m.pecas || '';
+    document.getElementById('maintenanceMaoObra').value = m.maoObra || '';
+    document.getElementById('maintenanceStatus').value = m.status || 'Em Andamento';
+    document.getElementById('maintenanceObservacoes').value = m.observacoes || '';
+  } else {
+    title.textContent = 'Nova Manutenção';
+    document.getElementById('maintenanceId').value = '';
+    document.getElementById('maintenanceNumero').value = nextMaintenanceNumber();
+    document.getElementById('maintenanceVeiculo').value = vehicles[0] ? vehicles[0].id : '';
+    document.getElementById('maintenanceTipo').value = 'Preventiva';
+    document.getElementById('maintenanceCategoria').value = '';
+    document.getElementById('maintenanceDescricao').value = '';
+    document.getElementById('maintenanceDataAbertura').value = new Date().toISOString().slice(0, 10);
+    document.getElementById('maintenanceDataConclusao').value = '';
+    document.getElementById('maintenanceKm').value = '';
+    document.getElementById('maintenanceOficina').value = '';
+    document.getElementById('maintenancePecas').value = '';
+    document.getElementById('maintenanceMaoObra').value = '';
+    document.getElementById('maintenanceStatus').value = 'Em Andamento';
+    document.getElementById('maintenanceObservacoes').value = '';
+  }
+  updateMaintenanceCustoTotal();
+  modal.classList.add('active');
+}
+
+function closeMaintenanceModal() {
+  document.getElementById('maintenanceModal').classList.remove('active');
+}
+
+async function saveMaintenance() {
+  const descricao = document.getElementById('maintenanceDescricao').value.trim();
+  if (!descricao) { showToast('Informe a descrição do serviço'); return; }
+  const veiculoId = document.getElementById('maintenanceVeiculo').value;
+  if (!veiculoId) { showToast('Selecione o veículo'); return; }
+
+  const pecas = parseFloat(document.getElementById('maintenancePecas').value) || 0;
+  const maoObra = parseFloat(document.getElementById('maintenanceMaoObra').value) || 0;
+
+  const id = document.getElementById('maintenanceId').value;
+  const data = {
+    id: id || 'man_' + Date.now(),
+    numero: document.getElementById('maintenanceNumero').value,
+    veiculoId,
+    tipo: document.getElementById('maintenanceTipo').value,
+    categoria: document.getElementById('maintenanceCategoria').value.trim(),
+    descricao,
+    dataAbertura: document.getElementById('maintenanceDataAbertura').value,
+    dataConclusao: document.getElementById('maintenanceDataConclusao').value,
+    km: parseFloat(document.getElementById('maintenanceKm').value) || 0,
+    oficina: document.getElementById('maintenanceOficina').value.trim(),
+    pecas,
+    maoObra,
+    custoTotal: pecas + maoObra,
+    status: document.getElementById('maintenanceStatus').value,
+    observacoes: document.getElementById('maintenanceObservacoes').value.trim()
+  };
+
+  if (id) {
+    const idx = maintenances.findIndex(m => m.id === id);
+    maintenances[idx] = data;
+  } else {
+    maintenances.push(data);
+  }
+
+  await storageSet('maintenances', maintenances);
+  renderMaintenancesTable();
+  closeMaintenanceModal();
+  showToast('Manutenção salva com sucesso');
+}
+
+async function deleteMaintenance(id) {
+  if (!confirm('Tem certeza que deseja excluir esta manutenção?')) return;
+  maintenances = maintenances.filter(m => m.id !== id);
+  await storageSet('maintenances', maintenances);
+  renderMaintenancesTable();
+  showToast('Manutenção excluída');
+}
+
+document.getElementById('btnNewMaintenance').addEventListener('click', () => openMaintenanceModal(null));
+document.getElementById('closeMaintenanceModal').addEventListener('click', closeMaintenanceModal);
+document.getElementById('cancelMaintenanceModal').addEventListener('click', closeMaintenanceModal);
+document.getElementById('saveMaintenanceModal').addEventListener('click', saveMaintenance);
+document.getElementById('maintenancePecas').addEventListener('input', updateMaintenanceCustoTotal);
+document.getElementById('maintenanceMaoObra').addEventListener('input', updateMaintenanceCustoTotal);
+document.getElementById('maintenanceModal').addEventListener('click', (e) => {
+  if (e.target.id === 'maintenanceModal') closeMaintenanceModal();
+});
+document.getElementById('maintenanceSearchInput').addEventListener('input', (e) => {
+  maintenanceSearchTerm = e.target.value;
+  renderMaintenancesTable();
+});
+
+// ============ PLANO PREVENTIVO ============
+let preventivePlans = []; // [{id, veiculoId, placa, servico, periodicidade, unidade, ultExecucao, proxPrev, kmPrevisto, responsavel, custo, status, prioridade, observacoes}]
+let preventiveSearchTerm = '';
+
+function preventiveStatusBadgeClass(status) {
+  if (status === 'Vencido') return 'badge-estourado';
+  if (status === 'Concluído') return 'badge-ok';
+  return 'badge-info'; // Agendado
+}
+function preventivePriorityBadgeClass(prioridade) {
+  if (prioridade === 'Alta') return 'badge-estourado';
+  if (prioridade === 'Média') return 'badge-atencao';
+  return 'badge-sem'; // Baixa
+}
+
+function populatePreventiveVehicleSelect() {
+  const sel = document.getElementById('preventivePlanVeiculo');
+  sel.innerHTML = vehicles.length
+    ? vehicles.map(v => `<option value="${v.id}">${v.codigo} — ${v.placa}</option>`).join('')
+    : `<option value="">Nenhum veículo cadastrado</option>`;
+}
+
+function updatePreventivePlanPlaca() {
+  const veiculoId = document.getElementById('preventivePlanVeiculo').value;
+  const v = vehicles.find(x => x.id === veiculoId);
+  document.getElementById('preventivePlanPlaca').value = v ? v.placa : '';
+}
+
+function renderPreventivePlansTable() {
+  const tbody = document.getElementById('preventivePlansTableBody');
+  tbody.innerHTML = '';
+
+  const term = preventiveSearchTerm.trim().toLowerCase();
+  const filteredBase = term
+    ? preventivePlans.filter(p => {
+        const v = vehicles.find(x => x.id === p.veiculoId);
+        return (v && (v.codigo || '').toLowerCase().includes(term)) ||
+          (p.placa || '').toLowerCase().includes(term) ||
+          (p.servico || '').toLowerCase().includes(term) ||
+          (p.responsavel || '').toLowerCase().includes(term);
+      })
+    : preventivePlans;
+
+  if (preventivePlans.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="14"><div class="empty-state">Nenhum item do plano preventivo cadastrado ainda.</div></td></tr>`;
+    return;
+  }
+  if (filteredBase.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="14"><div class="empty-state">Nenhum item encontrado para "${preventiveSearchTerm}".</div></td></tr>`;
+    return;
+  }
+
+  let totalCusto = 0;
+  filteredBase.forEach(p => { totalCusto += Number(p.custo) || 0; });
+
+  filteredBase.forEach(p => {
+    const v = vehicles.find(x => x.id === p.veiculoId);
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td>${v ? v.codigo : '-'}</td>
+      <td>${p.placa || '-'}</td>
+      <td>${p.servico || '-'}</td>
+      <td>${p.periodicidade ? Number(p.periodicidade).toLocaleString('pt-BR') : '-'}</td>
+      <td>${p.unidade || '-'}</td>
+      <td>${formatDateBR(p.ultExecucao)}</td>
+      <td>${formatDateBR(p.proxPrev)}</td>
+      <td>${p.kmPrevisto ? Number(p.kmPrevisto).toLocaleString('pt-BR') : '-'}</td>
+      <td>${p.responsavel || '-'}</td>
+      <td>${formatBRL(p.custo)}</td>
+      <td><span class="badge ${preventiveStatusBadgeClass(p.status)}">${p.status}</span></td>
+      <td><span class="badge ${preventivePriorityBadgeClass(p.prioridade)}">${p.prioridade}</span></td>
+      <td>${p.observacoes || '-'}</td>
+      <td>
+        <button class="btn secondary small" data-edit-preventive="${p.id}">Editar</button>
+        <button class="btn danger small" data-del-preventive="${p.id}">Excluir</button>
+      </td>
+    `;
+    tbody.appendChild(tr);
+  });
+
+  const totalRow = document.createElement('tr');
+  totalRow.className = 'total-row';
+  totalRow.innerHTML = `
+    <td colspan="9">TOTAL</td>
+    <td>${formatBRL(totalCusto)}</td>
+    <td colspan="4"></td>
+  `;
+  tbody.appendChild(totalRow);
+
+  tbody.querySelectorAll('[data-edit-preventive]').forEach(btn => {
+    btn.addEventListener('click', () => openPreventivePlanModal(btn.dataset.editPreventive));
+  });
+  tbody.querySelectorAll('[data-del-preventive]').forEach(btn => {
+    btn.addEventListener('click', () => deletePreventivePlan(btn.dataset.delPreventive));
+  });
+}
+
+function openPreventivePlanModal(id) {
+  populatePreventiveVehicleSelect();
+  const modal = document.getElementById('preventivePlanModal');
+  const title = document.getElementById('preventivePlanModalTitle');
+
+  if (id) {
+    const p = preventivePlans.find(x => x.id === id);
+    title.textContent = 'Editar Item do Plano Preventivo';
+    document.getElementById('preventivePlanId').value = p.id;
+    document.getElementById('preventivePlanVeiculo').value = p.veiculoId || '';
+    document.getElementById('preventivePlanServico').value = p.servico || '';
+    document.getElementById('preventivePlanPeriodicidade').value = p.periodicidade || '';
+    document.getElementById('preventivePlanUnidade').value = p.unidade || 'KM';
+    document.getElementById('preventivePlanUltExecucao').value = p.ultExecucao || '';
+    document.getElementById('preventivePlanProxPrev').value = p.proxPrev || '';
+    document.getElementById('preventivePlanKmPrevisto').value = p.kmPrevisto || '';
+    document.getElementById('preventivePlanResponsavel').value = p.responsavel || '';
+    document.getElementById('preventivePlanCusto').value = p.custo || '';
+    document.getElementById('preventivePlanStatus').value = p.status || 'Agendado';
+    document.getElementById('preventivePlanPrioridade').value = p.prioridade || 'Alta';
+    document.getElementById('preventivePlanObservacoes').value = p.observacoes || '';
+  } else {
+    title.textContent = 'Novo Item do Plano Preventivo';
+    document.getElementById('preventivePlanId').value = '';
+    document.getElementById('preventivePlanVeiculo').value = vehicles[0] ? vehicles[0].id : '';
+    document.getElementById('preventivePlanServico').value = '';
+    document.getElementById('preventivePlanPeriodicidade').value = '';
+    document.getElementById('preventivePlanUnidade').value = 'KM';
+    document.getElementById('preventivePlanUltExecucao').value = '';
+    document.getElementById('preventivePlanProxPrev').value = '';
+    document.getElementById('preventivePlanKmPrevisto').value = '';
+    document.getElementById('preventivePlanResponsavel').value = '';
+    document.getElementById('preventivePlanCusto').value = '';
+    document.getElementById('preventivePlanStatus').value = 'Agendado';
+    document.getElementById('preventivePlanPrioridade').value = 'Alta';
+    document.getElementById('preventivePlanObservacoes').value = '';
+  }
+  updatePreventivePlanPlaca();
+  modal.classList.add('active');
+}
+
+function closePreventivePlanModal() { document.getElementById('preventivePlanModal').classList.remove('active'); }
+
+async function savePreventivePlan() {
+  const servico = document.getElementById('preventivePlanServico').value.trim();
+  if (!servico) { showToast('Informe o serviço preventivo'); return; }
+  const veiculoId = document.getElementById('preventivePlanVeiculo').value;
+  if (!veiculoId) { showToast('Selecione o veículo'); return; }
+
+  const id = document.getElementById('preventivePlanId').value;
+  const data = {
+    id: id || 'prev_' + Date.now(),
+    veiculoId,
+    placa: document.getElementById('preventivePlanPlaca').value,
+    servico,
+    periodicidade: parseFloat(document.getElementById('preventivePlanPeriodicidade').value) || 0,
+    unidade: document.getElementById('preventivePlanUnidade').value,
+    ultExecucao: document.getElementById('preventivePlanUltExecucao').value,
+    proxPrev: document.getElementById('preventivePlanProxPrev').value,
+    kmPrevisto: parseFloat(document.getElementById('preventivePlanKmPrevisto').value) || 0,
+    responsavel: document.getElementById('preventivePlanResponsavel').value.trim(),
+    custo: parseFloat(document.getElementById('preventivePlanCusto').value) || 0,
+    status: document.getElementById('preventivePlanStatus').value,
+    prioridade: document.getElementById('preventivePlanPrioridade').value,
+    observacoes: document.getElementById('preventivePlanObservacoes').value.trim()
+  };
+
+  if (id) { preventivePlans[preventivePlans.findIndex(p => p.id === id)] = data; }
+  else { preventivePlans.push(data); }
+
+  await storageSet('preventivePlans', preventivePlans);
+  renderPreventivePlansTable();
+  closePreventivePlanModal();
+  showToast('Item salvo com sucesso');
+}
+
+async function deletePreventivePlan(id) {
+  if (!confirm('Excluir este item do plano preventivo?')) return;
+  preventivePlans = preventivePlans.filter(p => p.id !== id);
+  await storageSet('preventivePlans', preventivePlans);
+  renderPreventivePlansTable();
+  showToast('Item excluído');
+}
+
+document.getElementById('btnNewPreventivePlan').addEventListener('click', () => openPreventivePlanModal(null));
+document.getElementById('closePreventivePlanModal').addEventListener('click', closePreventivePlanModal);
+document.getElementById('cancelPreventivePlanModal').addEventListener('click', closePreventivePlanModal);
+document.getElementById('savePreventivePlanModal').addEventListener('click', savePreventivePlan);
+document.getElementById('preventivePlanVeiculo').addEventListener('change', updatePreventivePlanPlaca);
+document.getElementById('preventivePlanModal').addEventListener('click', (e) => {
+  if (e.target.id === 'preventivePlanModal') closePreventivePlanModal();
+});
+document.getElementById('preventiveSearchInput').addEventListener('input', (e) => {
+  preventiveSearchTerm = e.target.value;
+  renderPreventivePlansTable();
+});
+
+
+// ============ CHECKLIST DE INSPEÇÃO ============
+const DEFAULT_CHECKLIST_ITEMS = [
+  { tipo: 'categoria', texto: '🔍 MOTOR E FLUIDOS' },
+  { tipo: 'item', texto: 'Nível de óleo do motor' },
+  { tipo: 'item', texto: 'Nível de água/fluido de arrefecimento' },
+  { tipo: 'item', texto: 'Nível de fluido de freio' },
+  { tipo: 'item', texto: 'Nível de fluido de direção hidráulica' },
+  { tipo: 'item', texto: 'Nível de combustível' },
+  { tipo: 'item', texto: 'Verificar vazamentos (óleo, água, combustível)' },
+  { tipo: 'item', texto: 'Estado e tensão das correias' },
+  { tipo: 'categoria', texto: '🛞 PNEUS E RODAS' },
+  { tipo: 'item', texto: 'Calibragem dos pneus (incluindo estepe)' },
+  { tipo: 'item', texto: 'Estado de desgaste dos pneus' },
+  { tipo: 'item', texto: 'Verificar trincas ou danos visíveis' },
+  { tipo: 'item', texto: 'Verificar aros e parafusos das rodas' },
+  { tipo: 'item', texto: 'Estado do estepe' },
+  { tipo: 'categoria', texto: '🔆 ILUMINAÇÃO E ELÉTRICA' },
+  { tipo: 'item', texto: 'Faróis dianteiros (alto e baixo)' },
+  { tipo: 'item', texto: 'Lanternas traseiras e freio' },
+  { tipo: 'item', texto: 'Setas (dianteiras e traseiras)' },
+  { tipo: 'item', texto: 'Luz de ré e buzina de ré' },
+  { tipo: 'item', texto: 'Luz da placa' },
+  { tipo: 'item', texto: 'Pisca alerta (4 pisca)' },
+  { tipo: 'item', texto: 'Bateria (verificar terminais)' },
+  { tipo: 'categoria', texto: '🛑 FREIOS E SEGURANÇA' },
+  { tipo: 'item', texto: 'Pressão do sistema de freio a ar' },
+  { tipo: 'item', texto: 'Teste do freio de estacionamento' },
+  { tipo: 'item', texto: 'Verificar desgaste das pastilhas (visual)' },
+  { tipo: 'item', texto: 'Triângulo de sinalização' },
+  { tipo: 'item', texto: 'Extintor de incêndio (validade e carga)' },
+  { tipo: 'item', texto: 'Cinto de segurança' },
+  { tipo: 'item', texto: 'Espelhos retrovisores (posição e estado)' },
+  { tipo: 'categoria', texto: '🏗️ CARROCERIA E CABINE' },
+  { tipo: 'item', texto: 'Portas e travas da cabine' },
+  { tipo: 'item', texto: 'Para-brisa (trincas ou danos)' },
+  { tipo: 'item', texto: 'Limpadores de para-brisa' },
+  { tipo: 'item', texto: 'Portas da carroceria / baú (travas e dobradiças)' },
+  { tipo: 'item', texto: 'Amarrações e lonas da carga' },
+  { tipo: 'item', texto: 'Estado geral da carroceria' },
+  { tipo: 'item', texto: 'Limpeza interna da cabine' },
+  { tipo: 'categoria', texto: '📋 DOCUMENTAÇÃO' },
+  { tipo: 'item', texto: 'CRLV (licenciamento) em dia' },
+  { tipo: 'item', texto: 'CNH do motorista válida' },
+  { tipo: 'item', texto: 'Tacógrafo funcionando (se aplicável)' },
+  { tipo: 'item', texto: 'Certificado de tara' },
+  { tipo: 'item', texto: 'ANTT (se transporte de carga)' }
+].map((e, i) => ({ id: 'chk_' + i, ...e }));
+
+let checklistItems = [...DEFAULT_CHECKLIST_ITEMS];
+let checklists = []; // [{id, veiculoId, placa, data, km, motorista, turno, horaSaida, horaRetorno, respostas:{itemId:{status,obs}}, assinaturaMotorista, assinaturaSupervisor, liberado}]
+let checklistSearchTerm = '';
+
+// ---- Gerenciar itens (template) ----
+function renderChecklistItemsManage() {
+  const list = document.getElementById('checklistItemsManageList');
+  list.innerHTML = '';
+  checklistItems.forEach((entry, idx) => {
+    const row = document.createElement('div');
+    row.style.display = 'flex';
+    row.style.alignItems = 'center';
+    row.style.gap = '8px';
+    row.innerHTML = `
+      <span style="font-size:11px; font-weight:700; color:${entry.tipo === 'categoria' ? '#000' : '#999'}; width:64px;">${entry.tipo === 'categoria' ? 'CATEGORIA' : 'item'}</span>
+      <input type="text" value="${entry.texto.replace(/"/g, '&quot;')}" data-idx="${idx}" style="flex:1; padding:7px 9px; border:1px solid #ccc; border-radius:6px; font-family:inherit; font-weight:${entry.tipo === 'categoria' ? '700' : '400'};">
+      <button class="icon-btn" data-remove-item="${idx}" title="Excluir">✕</button>
+    `;
+    list.appendChild(row);
+  });
+
+  list.querySelectorAll('input[data-idx]').forEach(input => {
+    input.addEventListener('change', async (e) => {
+      const idx = parseInt(e.target.dataset.idx, 10);
+      checklistItems[idx].texto = e.target.value;
+      await storageSet('checklistItems', checklistItems);
+      showToast('Item atualizado');
+    });
+  });
+  list.querySelectorAll('[data-remove-item]').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const idx = parseInt(btn.dataset.removeItem, 10);
+      if (!confirm('Excluir este item/categoria do checklist?')) return;
+      checklistItems.splice(idx, 1);
+      await storageSet('checklistItems', checklistItems);
+      renderChecklistItemsManage();
+      showToast('Removido');
+    });
+  });
+}
+
+async function addChecklistEntry(tipo) {
+  checklistItems.push({ id: 'chk_' + Date.now(), tipo, texto: tipo === 'categoria' ? 'Nova categoria' : 'Novo item' });
+  await storageSet('checklistItems', checklistItems);
+  renderChecklistItemsManage();
+}
+
+document.getElementById('btnManageChecklistItems').addEventListener('click', () => {
+  renderChecklistItemsManage();
+  document.getElementById('checklistItemsModal').classList.add('active');
+});
+document.getElementById('closeChecklistItemsModal').addEventListener('click', () => document.getElementById('checklistItemsModal').classList.remove('active'));
+document.getElementById('closeChecklistItemsModalBtn').addEventListener('click', () => {
+  document.getElementById('checklistItemsModal').classList.remove('active');
+  renderChecklistItemsContainerIfOpen();
+});
+document.getElementById('btnAddChecklistCategory').addEventListener('click', () => addChecklistEntry('categoria'));
+document.getElementById('btnAddChecklistItem').addEventListener('click', () => addChecklistEntry('item'));
+
+function renderChecklistItemsContainerIfOpen() {
+  const currentResponses = collectChecklistResponses();
+  renderChecklistItemsContainer(currentResponses);
+}
+
+// ---- Preenchimento do checklist ----
+function populateChecklistVehicleSelect() {
+  const sel = document.getElementById('checklistVeiculo');
+  sel.innerHTML = vehicles.length
+    ? vehicles.map(v => `<option value="${v.id}">${v.codigo} — ${v.placa}</option>`).join('')
+    : `<option value="">Nenhum veículo cadastrado</option>`;
+}
+function updateChecklistPlaca() {
+  const v = vehicles.find(x => x.id === document.getElementById('checklistVeiculo').value);
+  document.getElementById('checklistPlaca').value = v ? v.placa : '';
+}
+
+function renderChecklistItemsContainer(responses) {
+  const container = document.getElementById('checklistItemsContainer');
+  let html = '';
+  let itemCounter = 0;
+  let categoryOpen = false;
+
+  checklistItems.forEach(entry => {
+    if (entry.tipo === 'categoria') {
+      if (categoryOpen) html += '</tbody></table>';
+      html += `<div class="checklist-category">${entry.texto}</div>`;
+      html += `<table class="checklist-items-table"><thead><tr style="background:#f5f5f5;">
+        <td class="checklist-item-num"><b>Nº</b></td>
+        <td class="checklist-item-name"><b>Item</b></td>
+        <td class="checklist-status-cell"><b>OK</b></td>
+        <td class="checklist-status-cell"><b>Defeito</b></td>
+        <td class="checklist-status-cell"><b>N/A</b></td>
+        <td class="checklist-obs-cell"><b>Observações</b></td>
+      </tr></thead><tbody>`;
+      categoryOpen = true;
+    } else {
+      itemCounter++;
+      const resp = (responses && responses[entry.id]) || {};
+      const status = resp.status || '';
+      const obs = (resp.obs || '').replace(/"/g, '&quot;');
+      html += `
+        <tr>
+          <td class="checklist-item-num">${itemCounter}</td>
+          <td class="checklist-item-name">${entry.texto}</td>
+          <td class="checklist-status-cell"><input type="radio" name="status_${entry.id}" value="OK" ${status === 'OK' ? 'checked' : ''}></td>
+          <td class="checklist-status-cell"><input type="radio" name="status_${entry.id}" value="Defeito" ${status === 'Defeito' ? 'checked' : ''}></td>
+          <td class="checklist-status-cell"><input type="radio" name="status_${entry.id}" value="NA" ${status === 'NA' ? 'checked' : ''}></td>
+          <td class="checklist-obs-cell"><input type="text" data-obs="${entry.id}" value="${obs}" placeholder="Observação"></td>
+        </tr>`;
+    }
+  });
+  if (categoryOpen) html += '</tbody></table>';
+  container.innerHTML = html;
+}
+
+function collectChecklistResponses() {
+  const responses = {};
+  checklistItems.filter(e => e.tipo === 'item').forEach(entry => {
+    const radios = document.getElementsByName('status_' + entry.id);
+    let status = '';
+    radios.forEach(r => { if (r.checked) status = r.value; });
+    const obsInput = document.querySelector(`[data-obs="${entry.id}"]`);
+    responses[entry.id] = { status, obs: obsInput ? obsInput.value.trim() : '' };
+  });
+  return responses;
+}
+
+function countDefects(responses) {
+  return Object.values(responses || {}).filter(r => r.status === 'Defeito').length;
+}
+
+function openChecklistForm(id, shouldScroll) {
+  populateChecklistVehicleSelect();
+  const title = document.getElementById('checklistFormTitle');
+  document.getElementById('checklistId').value = id || '';
+
+  if (id) {
+    const c = checklists.find(x => x.id === id);
+    title.textContent = 'Editar Checklist de Inspeção';
+    document.getElementById('checklistVeiculo').value = c.veiculoId || '';
+    document.getElementById('checklistData').value = c.data || '';
+    document.getElementById('checklistKm').value = c.km || '';
+    document.getElementById('checklistMotorista').value = c.motorista || '';
+    document.getElementById('checklistTurno').value = c.turno || '';
+    document.getElementById('checklistHoraSaida').value = c.horaSaida || '';
+    document.getElementById('checklistHoraRetorno').value = c.horaRetorno || '';
+    document.getElementById('checklistAssinaturaMotorista').value = c.assinaturaMotorista || '';
+    document.getElementById('checklistAssinaturaSupervisor').value = c.assinaturaSupervisor || '';
+    document.getElementById('checklistLiberado').value = c.liberado || 'Liberado';
+    renderChecklistItemsContainer(c.respostas || {});
+  } else {
+    title.textContent = 'Novo Checklist de Inspeção';
+    document.getElementById('checklistVeiculo').value = vehicles[0] ? vehicles[0].id : '';
+    document.getElementById('checklistData').value = new Date().toISOString().slice(0, 10);
+    document.getElementById('checklistKm').value = '';
+    document.getElementById('checklistMotorista').value = '';
+    document.getElementById('checklistTurno').value = '';
+    document.getElementById('checklistHoraSaida').value = '';
+    document.getElementById('checklistHoraRetorno').value = '';
+    document.getElementById('checklistAssinaturaMotorista').value = '';
+    document.getElementById('checklistAssinaturaSupervisor').value = '';
+    document.getElementById('checklistLiberado').value = 'Liberado';
+    renderChecklistItemsContainer({});
+  }
+  updateChecklistPlaca();
+  if (shouldScroll) {
+    document.getElementById('checklistFormOverlay').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+}
+
+function closeChecklistForm() {
+  openChecklistForm(null);
+}
+
+async function saveChecklist() {
+  const motorista = document.getElementById('checklistMotorista').value.trim();
+  if (!motorista) { showToast('Informe o nome do motorista'); return; }
+  const veiculoId = document.getElementById('checklistVeiculo').value;
+  if (!veiculoId) { showToast('Selecione o veículo'); return; }
+
+  const id = document.getElementById('checklistId').value;
+  const data = {
+    id: id || 'chkl_' + Date.now(),
+    veiculoId,
+    placa: document.getElementById('checklistPlaca').value,
+    data: document.getElementById('checklistData').value,
+    km: parseFloat(document.getElementById('checklistKm').value) || 0,
+    motorista,
+    turno: document.getElementById('checklistTurno').value.trim(),
+    horaSaida: document.getElementById('checklistHoraSaida').value,
+    horaRetorno: document.getElementById('checklistHoraRetorno').value,
+    respostas: collectChecklistResponses(),
+    assinaturaMotorista: document.getElementById('checklistAssinaturaMotorista').value.trim(),
+    assinaturaSupervisor: document.getElementById('checklistAssinaturaSupervisor').value.trim(),
+    liberado: document.getElementById('checklistLiberado').value
+  };
+
+  if (id) { checklists[checklists.findIndex(c => c.id === id)] = data; }
+  else { checklists.push(data); }
+
+  await storageSet('checklists', checklists);
+  renderChecklistsTable();
+  closeChecklistForm();
+  showToast('Checklist salvo com sucesso');
+}
+
+async function deleteChecklist(id) {
+  if (!confirm('Excluir este checklist?')) return;
+  checklists = checklists.filter(c => c.id !== id);
+  await storageSet('checklists', checklists);
+  renderChecklistsTable();
+  showToast('Checklist excluído');
+}
+
+// ---- Lista de checklists ----
+function renderChecklistsTable() {
+  const tbody = document.getElementById('checklistsTableBody');
+  tbody.innerHTML = '';
+
+  const term = checklistSearchTerm.trim().toLowerCase();
+  const filtered = term
+    ? checklists.filter(c => {
+        const v = vehicles.find(x => x.id === c.veiculoId);
+        return (v && (v.codigo || '').toLowerCase().includes(term)) ||
+          (c.placa || '').toLowerCase().includes(term) ||
+          (c.motorista || '').toLowerCase().includes(term);
+      })
+    : checklists;
+
+  if (checklists.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="8"><div class="empty-state">Nenhum checklist registrado ainda.</div></td></tr>`;
+    return;
+  }
+  if (filtered.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="8"><div class="empty-state">Nenhum checklist encontrado para "${checklistSearchTerm}".</div></td></tr>`;
+    return;
+  }
+
+  const sorted = [...filtered].sort((a, b) => (b.data || '').localeCompare(a.data || ''));
+
+  sorted.forEach(c => {
+    const v = vehicles.find(x => x.id === c.veiculoId);
+    const defeitos = countDefects(c.respostas);
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td>${formatDateBR(c.data)}</td>
+      <td>${v ? v.codigo : '-'}</td>
+      <td>${c.placa || '-'}</td>
+      <td>${c.motorista || '-'}</td>
+      <td>${c.km ? Number(c.km).toLocaleString('pt-BR') : '-'}</td>
+      <td>${defeitos > 0 ? `<span class="badge badge-estourado">${defeitos}</span>` : `<span class="badge badge-ok">0</span>`}</td>
+      <td><span class="badge ${c.liberado === 'Retido' ? 'badge-estourado' : 'badge-ok'}">${c.liberado}</span></td>
+      <td>
+        <button class="btn secondary small" data-view-checklist="${c.id}">Ver/Editar</button>
+        <button class="btn secondary small" data-print-checklist="${c.id}">Imprimir</button>
+        <button class="btn danger small" data-del-checklist="${c.id}">Excluir</button>
+      </td>
+    `;
+    tbody.appendChild(tr);
+  });
+
+  tbody.querySelectorAll('[data-view-checklist]').forEach(btn => {
+    btn.addEventListener('click', () => openChecklistForm(btn.dataset.viewChecklist, true));
+  });
+  tbody.querySelectorAll('[data-print-checklist]').forEach(btn => {
+    btn.addEventListener('click', () => printChecklistById(btn.dataset.printChecklist));
+  });
+  tbody.querySelectorAll('[data-del-checklist]').forEach(btn => {
+    btn.addEventListener('click', () => deleteChecklist(btn.dataset.delChecklist));
+  });
+}
+
+// ---- Impressão ----
+function buildPrintHTML(meta, responses) {
+  let html = `
+    <div class="print-header">✅ CHECKLIST DE INSPEÇÃO DIÁRIA — CAMINHÕES</div>
+    <div class="print-sub">Puma Gases · Gestão de Manutenção de Frota</div>
+    <div class="print-meta">
+      <div><b>Veículo:</b> ${meta.veiculoCodigo || '-'}</div>
+      <div><b>Placa:</b> ${meta.placa || '-'}</div>
+      <div><b>Data:</b> ${formatDateBR(meta.data)}</div>
+      <div><b>KM:</b> ${meta.km ? Number(meta.km).toLocaleString('pt-BR') : '-'}</div>
+      <div><b>Motorista:</b> ${meta.motorista || '-'}</div>
+      <div><b>Turno:</b> ${meta.turno || '-'}</div>
+      <div><b>Hora Saída:</b> ${meta.horaSaida || '-'}</div>
+      <div><b>Hora Retorno:</b> ${meta.horaRetorno || '-'}</div>
+    </div>
+  `;
+
+  let itemCounter = 0;
+  let tableOpen = false;
+  checklistItems.forEach(entry => {
+    if (entry.tipo === 'categoria') {
+      if (tableOpen) html += '</table>';
+      html += `<div class="print-category">${entry.texto}</div>`;
+      html += `<table class="print-items-table"><tr><th style="width:24px;">Nº</th><th>Item</th><th style="width:34px;">OK</th><th style="width:50px;">Defeito</th><th style="width:34px;">N/A</th><th>Obs.</th></tr>`;
+      tableOpen = true;
+    } else {
+      itemCounter++;
+      const resp = (responses && responses[entry.id]) || {};
+      const mark = (v) => resp.status === v ? '✔' : '';
+      html += `<tr>
+        <td>${itemCounter}</td>
+        <td>${entry.texto}</td>
+        <td style="text-align:center;">${mark('OK')}</td>
+        <td style="text-align:center;">${mark('Defeito')}</td>
+        <td style="text-align:center;">${mark('NA')}</td>
+        <td>${resp.obs || ''}</td>
+      </tr>`;
+    }
+  });
+  if (tableOpen) html += '</table>';
+
+  html += `
+    <div class="print-signature">
+      <div>Assinatura do Motorista<br><br>${meta.assinaturaMotorista || ''}</div>
+      <div>Assinatura do Supervisor<br><br>${meta.assinaturaSupervisor || ''}</div>
+      <div>Veículo: <b>${meta.liberado || '-'}</b></div>
+    </div>
+  `;
+  return html;
+}
+
+function printChecklistById(id) {
+  const c = checklists.find(x => x.id === id);
+  if (!c) return;
+  const v = vehicles.find(x => x.id === c.veiculoId);
+  const meta = { ...c, veiculoCodigo: v ? v.codigo : '-' };
+  document.getElementById('printArea').innerHTML = buildPrintHTML(meta, c.respostas);
+  window.print();
+}
+
+function printCurrentChecklistForm() {
+  const v = vehicles.find(x => x.id === document.getElementById('checklistVeiculo').value);
+  const meta = {
+    veiculoCodigo: v ? v.codigo : '-',
+    placa: document.getElementById('checklistPlaca').value,
+    data: document.getElementById('checklistData').value,
+    km: document.getElementById('checklistKm').value,
+    motorista: document.getElementById('checklistMotorista').value,
+    turno: document.getElementById('checklistTurno').value,
+    horaSaida: document.getElementById('checklistHoraSaida').value,
+    horaRetorno: document.getElementById('checklistHoraRetorno').value,
+    assinaturaMotorista: document.getElementById('checklistAssinaturaMotorista').value,
+    assinaturaSupervisor: document.getElementById('checklistAssinaturaSupervisor').value,
+    liberado: document.getElementById('checklistLiberado').value
+  };
+  const responses = collectChecklistResponses();
+  document.getElementById('printArea').innerHTML = buildPrintHTML(meta, responses);
+  window.print();
+}
+
+document.getElementById('btnNewChecklist').addEventListener('click', () => openChecklistForm(null, true));
+document.getElementById('closeChecklistForm').addEventListener('click', closeChecklistForm);
+document.getElementById('saveChecklistForm').addEventListener('click', saveChecklist);
+document.getElementById('btnPrintChecklist').addEventListener('click', printCurrentChecklistForm);
+document.getElementById('checklistVeiculo').addEventListener('change', updateChecklistPlaca);
+document.getElementById('checklistSearchInput').addEventListener('input', (e) => {
+  checklistSearchTerm = e.target.value;
+  renderChecklistsTable();
+});
+
+// ============ PAINEL EXECUTIVO (DASHBOARD) ============
+let dashCharts = {};
+function destroyChart(id) { if (dashCharts[id]) { dashCharts[id].destroy(); delete dashCharts[id]; } }
+
+function commonChartOptions(legend) {
+  return {
+    responsive: true, maintainAspectRatio: false,
+    plugins: { legend: { display: !!legend, labels: { color: '#cfd2f5' } }, tooltip: { titleColor: '#fff', bodyColor: '#fff', backgroundColor: '#1c1a3a' } },
+    scales: {
+      x: { ticks: { color: '#9ea3c9' }, grid: { color: 'rgba(255,255,255,0.06)' } },
+      y: { ticks: { color: '#9ea3c9' }, grid: { color: 'rgba(255,255,255,0.06)' }, beginAtZero: true }
+    }
+  };
+}
+
+function initDashboardDefaults() {
+  const inicio = document.getElementById('dashDataInicio');
+  const fim = document.getElementById('dashDataFim');
+  if (!inicio.value) { const now = new Date(); inicio.value = new Date(now.getFullYear(), 0, 1).toISOString().slice(0, 10); }
+  if (!fim.value) { fim.value = new Date().toISOString().slice(0, 10); }
+
+  const sel = document.getElementById('dashVeiculoFiltro');
+  const current = sel.value;
+  sel.innerHTML = '<option value="">Todos os caminhões</option>' + vehicles.map(v => `<option value="${v.id}">${v.codigo} — ${v.placa}</option>`).join('');
+  if (vehicles.some(v => v.id === current)) sel.value = current;
+}
+
+function inRange(dateStr, from, to) {
+  if (!dateStr) return false;
+  if (from && dateStr < from) return false;
+  if (to && dateStr > to) return false;
+  return true;
+}
+
+function renderDashboard() {
+  if (typeof Chart === 'undefined') return;
+  const veiculoId = document.getElementById('dashVeiculoFiltro').value;
+  const from = document.getElementById('dashDataInicio').value;
+  const to = document.getElementById('dashDataFim').value;
+
+  const filtered = maintenances.filter(m =>
+    (!veiculoId || m.veiculoId === veiculoId) && inRange(m.dataAbertura, from, to)
+  );
+
+  const totalOS = filtered.length;
+  const custoTotal = filtered.reduce((s, m) => s + (Number(m.custoTotal) || 0), 0);
+  const preventivas = filtered.filter(m => m.tipo === 'Preventiva').reduce((s, m) => s + (Number(m.custoTotal) || 0), 0);
+  const corretivas = filtered.filter(m => m.tipo === 'Corretiva').reduce((s, m) => s + (Number(m.custoTotal) || 0), 0);
+  const custoMedio = totalOS > 0 ? custoTotal / totalOS : 0;
+  const veiculosAtivos = vehicles.filter(v => v.status === 'Ativo').length;
+  const alertasVencidos = preventivePlans.filter(p => p.status === 'Vencido' && (!veiculoId || p.veiculoId === veiculoId)).length;
+
+  document.getElementById('kpiTotalOS').textContent = totalOS;
+  document.getElementById('kpiCustoTotal').textContent = formatBRL(custoTotal);
+  document.getElementById('kpiPreventivas').textContent = formatBRL(preventivas);
+  document.getElementById('kpiCorretivas').textContent = formatBRL(corretivas);
+  document.getElementById('kpiCustoMedio').textContent = formatBRL(custoMedio);
+  document.getElementById('kpiVeiculosAtivos').textContent = veiculosAtivos;
+  document.getElementById('kpiAlertasVencidos').textContent = alertasVencidos;
+
+  renderChartStatusFrota();
+  renderChartTipoManutencao(filtered);
+  renderChartFabricante();
+  renderChartEvolucao(veiculoId);
+  renderAlertasCriticos(veiculoId);
+  renderProximasManutencoes(veiculoId);
+  renderIndicadores(filtered, custoMedio, corretivas, custoTotal, alertasVencidos);
+  renderTabelaCustoPorCaminhao(from, to);
+}
+
+const STATUS_FROTA_COLORS = { 'Ativo': '#4ade80', 'Manutenção': '#facc15', 'Inativo': '#f87171' };
+function renderChartStatusFrota() {
+  const statuses = ['Ativo', 'Manutenção', 'Inativo'];
+  const counts = statuses.map(s => vehicles.filter(v => v.status === s).length);
+  destroyChart('chartStatusFrota');
+  const ctx = document.getElementById('chartStatusFrota').getContext('2d');
+  dashCharts['chartStatusFrota'] = new Chart(ctx, {
+    type: 'doughnut',
+    data: { labels: statuses, datasets: [{ data: counts, backgroundColor: statuses.map(s => STATUS_FROTA_COLORS[s]), borderWidth: 0 }] },
+    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { color: '#cfd2f5', boxWidth: 10, font: { size: 11 } } } } }
+  });
+}
+
+function renderChartTipoManutencao(filtered) {
+  const tipos = ['Preventiva', 'Corretiva', 'Preditiva'];
+  const cores = { 'Preventiva': '#60a5fa', 'Corretiva': '#f87171', 'Preditiva': '#a78bfa' };
+  const data = tipos.map(t => filtered.filter(m => m.tipo === t).reduce((s, m) => s + (Number(m.custoTotal) || 0), 0));
+  destroyChart('chartTipoManutencao');
+  const ctx = document.getElementById('chartTipoManutencao').getContext('2d');
+  dashCharts['chartTipoManutencao'] = new Chart(ctx, {
+    type: 'doughnut',
+    data: { labels: tipos, datasets: [{ data, backgroundColor: tipos.map(t => cores[t]), borderWidth: 0 }] },
+    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { color: '#cfd2f5', boxWidth: 10, font: { size: 11 } } } } }
+  });
+}
+
+function renderChartFabricante() {
+  const map = {};
+  vehicles.forEach(v => { if (v.marca) map[v.marca] = (map[v.marca] || 0) + 1; });
+  const entries = Object.entries(map).sort((a, b) => b[1] - a[1]);
+  destroyChart('chartFabricante');
+  const ctx = document.getElementById('chartFabricante').getContext('2d');
+  dashCharts['chartFabricante'] = new Chart(ctx, {
+    type: 'bar',
+    data: { labels: entries.map(e => e[0]), datasets: [{ label: 'Veículos', data: entries.map(e => e[1]), backgroundColor: '#818cf8', borderRadius: 6, maxBarThickness: 30 }] },
+    options: commonChartOptions(false)
+  });
+}
+
+function renderChartEvolucao(veiculoId) {
+  const relevant = maintenances.filter(m => (!veiculoId || m.veiculoId === veiculoId) && m.dataAbertura);
+  const byMonth = {};
+  relevant.forEach(m => {
+    const month = m.dataAbertura.slice(0, 7);
+    byMonth[month] = (byMonth[month] || 0) + (Number(m.custoTotal) || 0);
+  });
+  const months = Object.keys(byMonth).sort();
+  const nomesMes = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
+  const labels = months.map(m => { const [y, mm] = m.split('-'); return nomesMes[parseInt(mm, 10) - 1] + '/' + y.slice(2); });
+  const values = months.map(m => byMonth[m]);
+
+  destroyChart('chartEvolucao');
+  const canvas = document.getElementById('chartEvolucao');
+  const ctx = canvas.getContext('2d');
+  const gradient = ctx.createLinearGradient(0, 0, 0, 240);
+  gradient.addColorStop(0, 'rgba(168,85,247,0.55)');
+  gradient.addColorStop(1, 'rgba(168,85,247,0)');
+
+  dashCharts['chartEvolucao'] = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: labels.length ? labels : ['Sem dados'],
+      datasets: [{ label: 'Custo', data: values.length ? values : [0], borderColor: '#a855f7', backgroundColor: gradient, fill: true, tension: 0.4, pointBackgroundColor: '#a855f7', pointRadius: 4 }]
+    },
+    options: commonChartOptions(false)
+  });
+}
+
+function renderAlertasCriticos(veiculoId) {
+  const container = document.getElementById('dashAlertasCriticos');
+  const vencidos = preventivePlans.filter(p => p.status === 'Vencido' && (!veiculoId || p.veiculoId === veiculoId));
+  if (!vencidos.length) { container.innerHTML = '<div class="dash-empty">Nenhum alerta vencido. 🎉</div>'; return; }
+  container.innerHTML = vencidos.slice(0, 8).map(p => {
+    const v = vehicles.find(x => x.id === p.veiculoId);
+    return `
+      <div class="dash-list-item">
+        <div>
+          <div class="dash-list-name">${v ? v.codigo : '-'} — ${p.servico}</div>
+          <div class="dash-list-meta">Placa: ${p.placa || '-'} · Prioridade: ${p.prioridade}</div>
+        </div>
+        <div class="dash-list-value danger">Vencido</div>
+      </div>`;
+  }).join('');
+}
+
+function renderProximasManutencoes(veiculoId) {
+  const container = document.getElementById('dashProximasManutencoes');
+  const agendados = preventivePlans.filter(p => p.status === 'Agendado' && (!veiculoId || p.veiculoId === veiculoId));
+  if (!agendados.length) { container.innerHTML = '<div class="dash-empty">Nenhuma manutenção agendada.</div>'; return; }
+  container.innerHTML = agendados.slice(0, 8).map(p => {
+    const v = vehicles.find(x => x.id === p.veiculoId);
+    const prev = p.proxPrev ? formatDateBR(p.proxPrev) : (p.kmPrevisto ? Number(p.kmPrevisto).toLocaleString('pt-BR') + ' km' : '-');
+    return `
+      <div class="dash-list-item">
+        <div>
+          <div class="dash-list-name">${v ? v.codigo : '-'} — ${p.servico}</div>
+          <div class="dash-list-meta">Previsto: ${prev}</div>
+        </div>
+        <div class="dash-list-value warn">Agendado</div>
+      </div>`;
+  }).join('');
+}
+
+function renderIndicadores(filtered, custoMedio, corretivas, custoTotal, alertasVencidos) {
+  const container = document.getElementById('dashIndicadores');
+  const pctCorretivo = custoTotal > 0 ? (corretivas / custoTotal) * 100 : 0;
+  const totalPecas = filtered.reduce((s, m) => s + (Number(m.pecas) || 0), 0);
+  const totalMaoObra = filtered.reduce((s, m) => s + (Number(m.maoObra) || 0), 0);
+  const pctPecas = custoTotal > 0 ? (totalPecas / custoTotal) * 100 : 0;
+  const pctMaoObra = custoTotal > 0 ? (totalMaoObra / custoTotal) * 100 : 0;
+  const veiculosManutencao = vehicles.filter(v => v.status === 'Manutenção').length;
+
+  const items = [
+    ['Custo Médio por OS', formatBRL(custoMedio)],
+    ['% Custo Corretivo', pctCorretivo.toFixed(1) + '%'],
+    ['% Custo em Peças', pctPecas.toFixed(1) + '%'],
+    ['% Custo em Mão de Obra', pctMaoObra.toFixed(1) + '%'],
+    ['Veículos em Manutenção', veiculosManutencao],
+    ['Alertas Vencidos', alertasVencidos]
+  ];
+  container.innerHTML = items.map(([label, val]) => `
+    <div class="dash-list-item"><div class="dash-list-name">${label}</div><div class="dash-list-value">${val}</div></div>
+  `).join('');
+}
+
+function renderTabelaCustoPorCaminhao(from, to) {
+  const tbody = document.getElementById('dashCustoPorCaminhaoBody');
+  if (vehicles.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="11" style="text-align:center; color:#9ea3c9; padding:20px;">Nenhum veículo cadastrado.</td></tr>`;
+    return;
+  }
+
+  const relevant = maintenances.filter(m => inRange(m.dataAbertura, from, to));
+  const rows = vehicles.map(v => {
+    const vMaint = relevant.filter(m => m.veiculoId === v.id);
+    const os = vMaint.length;
+    const prevent = vMaint.filter(m => m.tipo === 'Preventiva').reduce((s, m) => s + (Number(m.custoTotal) || 0), 0);
+    const corret = vMaint.filter(m => m.tipo === 'Corretiva').reduce((s, m) => s + (Number(m.custoTotal) || 0), 0);
+    const predit = vMaint.filter(m => m.tipo === 'Preditiva').reduce((s, m) => s + (Number(m.custoTotal) || 0), 0);
+    const total = prevent + corret + predit;
+    const custoMed = os > 0 ? total / os : 0;
+    return { v, os, prevent, corret, predit, total, custoMed };
+  });
+
+  const grandTotal = rows.reduce((s, r) => s + r.total, 0);
+
+  tbody.innerHTML = rows.map(r => `
+    <tr>
+      <td>${r.v.codigo}</td>
+      <td>${r.v.placa}</td>
+      <td>${r.v.marca || '-'}</td>
+      <td>${r.v.status}</td>
+      <td>${r.os}</td>
+      <td>${formatBRL(r.prevent)}</td>
+      <td>${formatBRL(r.corret)}</td>
+      <td>${formatBRL(r.predit)}</td>
+      <td>${formatBRL(r.total)}</td>
+      <td>${grandTotal > 0 ? ((r.total / grandTotal) * 100).toFixed(1) + '%' : '0%'}</td>
+      <td>${formatBRL(r.custoMed)}</td>
+    </tr>
+  `).join('');
+}
+
+document.getElementById('btnDashFiltrar').addEventListener('click', renderDashboard);
+
+// ============ INITIAL LOAD + SINCRONIZAÇÃO EM TEMPO REAL ============
+async function loadAll() {
+  vehicles = await storageGet('vehicles', []);
+  maintenances = await storageGet('maintenances', []);
+  preventivePlans = await storageGet('preventivePlans', []);
+  checklistItems = await storageGet('checklistItems', [...DEFAULT_CHECKLIST_ITEMS]);
+  checklists = await storageGet('checklists', []);
+}
+
+function applyIncomingData(key, parsedData) {
+  if (parsedData === null || parsedData === undefined) return;
+  const vehicleModalOpen = document.getElementById('vehicleModal').classList.contains('active');
+  const usersModalOpen = document.getElementById('usersModal').classList.contains('active');
+
+  if (key === 'vehicles') {
+    vehicles = parsedData;
+    if (!vehicleModalOpen) renderVehiclesTable();
+    const preventiveModalOpenV = document.getElementById('preventivePlanModal').classList.contains('active');
+    if (!preventiveModalOpenV) renderPreventivePlansTable();
+  } else if (key === 'maintenances') {
+    maintenances = parsedData;
+    const maintenanceModalOpen = document.getElementById('maintenanceModal').classList.contains('active');
+    if (!maintenanceModalOpen) renderMaintenancesTable();
+  } else if (key === 'preventivePlans') {
+    preventivePlans = parsedData;
+    const preventiveModalOpen = document.getElementById('preventivePlanModal').classList.contains('active');
+    if (!preventiveModalOpen) renderPreventivePlansTable();
+  } else if (key === 'checklistItems') {
+    checklistItems = parsedData;
+    const itemsModalOpen = document.getElementById('checklistItemsModal').classList.contains('active');
+    if (itemsModalOpen) renderChecklistItemsManage();
+  } else if (key === 'checklists') {
+    checklists = parsedData;
+    renderChecklistsTable();
+  } else if (key === 'app_users') {
+    users = parsedData;
+    if (usersModalOpen) renderUsersTable();
+  }
+
+  const dashboardActive = document.getElementById('tab-dashboard').classList.contains('active');
+  if (dashboardActive) renderDashboard();
+}
+
+function startRealtimeListeners() {
+  ['vehicles', 'maintenances', 'preventivePlans', 'checklistItems', 'checklists', 'app_users'].forEach(key => {
+    db.collection('app_data').doc(key).onSnapshot(
+      (doc) => {
+        if (!doc.exists) return;
+        try { applyIncomingData(key, JSON.parse(doc.data().value)); setSyncStatus('ok'); }
+        catch (e) { console.error('Erro ao processar atualização de', key, e); }
+      },
+      (err) => { setSyncStatus('error'); console.error('Erro de sincronização em', key, err); }
+    );
+  });
+}
+
+async function startApp() {
+  await loadAll();
+  renderVehiclesTable();
+  renderMaintenancesTable();
+  renderPreventivePlansTable();
+  renderChecklistsTable();
+  openChecklistForm(null);
+  startRealtimeListeners();
+}
+
+async function init() {
+  await loadUsers();
+  const autoLoggedIn = await tryAutoLogin();
+  if (!autoLoggedIn) showLoginScreen();
+}
+
+init();
+</script>
+
+</body>
+</html>
